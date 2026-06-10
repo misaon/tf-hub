@@ -4,6 +4,55 @@ All notable changes are documented here. This file is maintained by
 [changelogen](https://github.com/unjs/changelogen) from
 [Conventional Commits](https://www.conventionalcommits.org).
 
+## v0.1.2
+
+[compare changes](https://github.com/misaon/tf-hub/compare/v0.1.1...v0.1.2)
+
+### 🚀 Enhancements
+
+- Agent-friendly absence and identity outputs ([1f0e972](https://github.com/misaon/tf-hub/commit/1f0e972))
+- Extend --mine to goals and document worklog minutes ([340b640](https://github.com/misaon/tf-hub/commit/340b640))
+- **auth:** Serve the browser login with h3 ([943c1d3](https://github.com/misaon/tf-hub/commit/943c1d3))
+- **cli:** Headline summaries in help tables ([629de94](https://github.com/misaon/tf-hub/commit/629de94))
+
+### 🔥 Performance
+
+- Minify the bundle and speed up update checks ([55df5ee](https://github.com/misaon/tf-hub/commit/55df5ee))
+
+### 🩹 Fixes
+
+- Harden error paths and adopt dependabot ([379efaf](https://github.com/misaon/tf-hub/commit/379efaf))
+
+### 💅 Refactors
+
+- Unify domain idioms and deduplicate shared logic ([e22e22d](https://github.com/misaon/tf-hub/commit/e22e22d))
+
+### 📖 Documentation
+
+- Read the license badge from npm ([9723c3a](https://github.com/misaon/tf-hub/commit/9723c3a))
+
+### 🏡 Chore
+
+- Switch dependency updates back to renovate ([6141f34](https://github.com/misaon/tf-hub/commit/6141f34))
+
+### ✅ Tests
+
+- Smoke every operation through its CLI command ([b900601](https://github.com/misaon/tf-hub/commit/b900601))
+
+### 🎨 Styles
+
+- Format the oxfmt configuration ([cc8615b](https://github.com/misaon/tf-hub/commit/cc8615b))
+
+### 🤖 CI
+
+- Exclude the generated changelog from format checks ([dcbfc95](https://github.com/misaon/tf-hub/commit/dcbfc95))
+- Create the github release with gh instead of changelogen ([a1c2c8b](https://github.com/misaon/tf-hub/commit/a1c2c8b))
+- Reproducible bun, full release gate and explicit coverage thresholds ([f9315c8](https://github.com/misaon/tf-hub/commit/f9315c8))
+
+### ❤️ Contributors
+
+- Ondřej Misák ([@misaon](https://github.com/misaon))
+
 ## v0.1.1
 
 
