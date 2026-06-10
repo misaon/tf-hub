@@ -1,13 +1,13 @@
 # tf-hub
 
-<!-- automd:badges color="yellow" license name="@misaon/tf-hub" -->
+<!-- automd:badges color="yellow" name="@misaon/tf-hub" -->
 
 [![npm version](https://img.shields.io/npm/v/@misaon/tf-hub?color=yellow)](https://npmjs.com/package/@misaon/tf-hub)
 [![npm downloads](https://img.shields.io/npm/dm/@misaon/tf-hub?color=yellow)](https://npm.chart.dev/@misaon/tf-hub)
-[![license](https://img.shields.io/github/license/misaon/tf-hub?color=yellow)](https://github.com/misaon/tf-hub/blob/main/LICENSE)
 
 <!-- /automd -->
 
+[![license](https://img.shields.io/npm/l/%40misaon%2Ftf-hub?color=yellow)](https://github.com/misaon/tf-hub/blob/main/LICENSE)
 [![ci](https://github.com/misaon/tf-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/misaon/tf-hub/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/misaon/tf-hub/graph/badge.svg)](https://codecov.io/gh/misaon/tf-hub)
 
