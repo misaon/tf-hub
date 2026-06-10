@@ -1,5 +1,17 @@
 import { spyOn, type Mock } from "bun:test";
 
+import { writeStoredCredentials, type StoredCredentials } from "../src/auth/store.ts";
+
+export function seedValidSession(overrides: Partial<StoredCredentials> = {}): Promise<void> {
+  return writeStoredCredentials({
+    apiKey: "k",
+    refreshToken: "r",
+    idToken: "ID",
+    idTokenExpiresAtMs: Date.now() + 3_600_000,
+    ...overrides,
+  });
+}
+
 type FetchImplementation = (
   input: Parameters<typeof fetch>[0],
   init?: Parameters<typeof fetch>[1],

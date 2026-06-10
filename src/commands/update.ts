@@ -48,7 +48,7 @@ export const updateCommand = defineCommand({
 
     const [command = "", ...commandArguments] = installCommand.split(" ");
     const installer = spawn(command, commandArguments, { stdio: "inherit" });
-    const [exitCode] = await once(installer, "exit");
+    const [exitCode] = (await once(installer, "exit")) as [number | null];
 
     if (exitCode !== 0) {
       throw new Error(`Update failed (exit code ${exitCode}).`);

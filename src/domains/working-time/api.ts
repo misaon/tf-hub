@@ -55,7 +55,7 @@ export async function getWorkingTimeRecordsSummary(options: {
   collaboratorUuid?: string | undefined;
   month?: string | undefined;
   year?: string | undefined;
-  legalType?: string | undefined;
+  legalType?: (typeof legalTypes)[number] | undefined;
   state?: string | undefined;
 }): Promise<WorkingTimeRecordSummary[]> {
   return summaryListSchema.parse(await callApi(`${recordsPath}/summary`, { query: options }));
@@ -68,7 +68,7 @@ export interface DateItemInput {
 
 export async function updateWorkingTimeRecordItem(options: {
   id: number;
-  state: string;
+  state: (typeof workingTimeRecordStates)[number];
   note?: string | undefined;
   dateItems: DateItemInput[];
 }): Promise<WorkingTimeRecordItem> {
@@ -79,7 +79,7 @@ export async function updateWorkingTimeRecordItem(options: {
 
 export async function updateWorkingTimeRecordItemStatus(options: {
   id: number;
-  state: string;
+  state: (typeof workingTimeRecordStates)[number];
   note: string;
 }): Promise<WorkingTimeRecordItem> {
   const { id, ...body } = options;
@@ -87,7 +87,10 @@ export async function updateWorkingTimeRecordItemStatus(options: {
   return zWorkingTimeRecordItemDto.parse(await callApi(`${recordItemsPath}/${id}/status`, { method: "PUT", body }));
 }
 
-export async function deleteWorkingTimeRecord(options: { id: number; legalType: string }): Promise<void> {
+export async function deleteWorkingTimeRecord(options: {
+  id: number;
+  legalType: (typeof legalTypes)[number];
+}): Promise<void> {
   await callApi(`${recordsPath}/${options.id}/${options.legalType}`, { method: "DELETE" });
 }
 

@@ -4,7 +4,7 @@ import { decodeJwtClaims } from "../../auth/jwt.ts";
 import { getValidIdToken } from "../../auth/tokens.ts";
 import { detailsRenderer, formatName, formatValue, missingValue } from "../../cli/output.ts";
 import { getCurrentCollaborator, omitBio } from "../collaborators/api.ts";
-import { positionOf } from "../collaborators";
+import { positionOf } from "../collaborators/index.ts";
 import { standaloneEntry, type RegistryEntry } from "../domain.ts";
 import { defineOperation } from "../operation.ts";
 
@@ -40,7 +40,7 @@ export const meEntry: RegistryEntry = standaloneEntry(
   defineOperation({
     name: "me",
     description:
-      "Show the signed-in user's Hub identity and profile (uuid, id, email, positions, game state). " +
+      "Show the signed-in user's TF Hub identity and profile (uuid, id, email, positions, game state). " +
       "The bio is omitted — fetch it with colleagues-show when needed.",
     input: z.object({}),
     async run() {

@@ -24,13 +24,19 @@ export async function refreshIdToken(apiKey: string, refreshToken: string): Prom
     body: new URLSearchParams({ grant_type: "refresh_token", refresh_token: refreshToken }),
   }).catch((error: FetchError) => {
     if (error.status === 400 || error.status === 401 || error.status === 403) {
-      throw new Error("Session expired or revoked. Run `tf-hub login` again.");
+      throw new Error("Your session has expired or was revoked — run `tf-hub login`.", { cause: error });
     }
 
-    throw new Error(`Token refresh failed (HTTP ${error.status ?? "?"})`);
+    throw new Error(`Token refresh failed (HTTP ${error.status ?? "?"}).`, { cause: error });
   });
 
-  const response = secureTokenResponseSchema.parse(rawResponse);
+  const parsed = secureTokenResponseSchema.safeParse(rawResponse);
+
+  if (!parsed.success) {
+    throw new Error("Unexpected response from the token service — try `tf-hub login` again.", { cause: parsed.error });
+  }
+
+  const response = parsed.data;
 
   return {
     idToken: response.id_token,

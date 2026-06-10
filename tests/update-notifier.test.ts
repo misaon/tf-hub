@@ -21,6 +21,19 @@ describe("selectUpdateNotice", () => {
   it("stays silent when the latest version is unknown", () => {
     expect(selectUpdateNotice("0.1.0", null)).toBeNull();
   });
+
+  it("never advertises a pre-release", () => {
+    expect(selectUpdateNotice("0.1.0", "0.2.0-beta.1")).toBeNull();
+  });
+
+  it("compares version segments numerically, not lexicographically", () => {
+    expect(selectUpdateNotice("0.9.0", "0.10.0")).toBe("0.10.0");
+    expect(selectUpdateNotice("0.10.0", "0.9.0")).toBeNull();
+  });
+
+  it("advertises a stable release over a pre-release build of the same version", () => {
+    expect(selectUpdateNotice("0.2.0-beta.1", "0.2.0")).toBe("0.2.0");
+  });
 });
 
 describe("updateInstallCommand", () => {
@@ -38,10 +51,7 @@ describe("updateInstallCommand", () => {
 describe("standalone binary mode", () => {
   it("detects Bun's virtual filesystem entry paths on every platform", () => {
     expect(runsAsStandaloneBinary("/$bunfs/root/index.mjs")).toBe(true);
-    expect(
-      runsAsStandaloneBinary(String.raw`B:\~BUN
-oot\index.mjs`),
-    ).toBe(true);
+    expect(runsAsStandaloneBinary(String.raw`B:\~BUN\root\index.mjs`)).toBe(true);
     expect(runsAsStandaloneBinary("/usr/local/bin/tf-hub/dist/index.mjs")).toBe(false);
   });
 

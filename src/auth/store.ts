@@ -26,10 +26,19 @@ async function readCredentialsFile(): Promise<string | null> {
   }
 }
 
+// A corrupted credentials file must never block recovery commands like `tf-hub logout`.
 export async function readStoredCredentials(): Promise<StoredCredentials | null> {
   const serialized = await readCredentialsFile();
 
-  return serialized ? storedCredentialsSchema.parse(JSON.parse(serialized)) : null;
+  if (!serialized) {
+    return null;
+  }
+
+  try {
+    return storedCredentialsSchema.parse(JSON.parse(serialized));
+  } catch {
+    return null;
+  }
 }
 
 export async function writeStoredCredentials(credentials: StoredCredentials): Promise<void> {

@@ -55,6 +55,23 @@ describe("performBrowserLogin", () => {
     expect(result).toEqual({ idToken: "ID", refreshToken: "RT" });
   });
 
+  it("survives a malformed callback payload and still completes the sign-in", async () => {
+    let malformedStatus = 0;
+
+    const result = await performBrowserLogin((url) => {
+      void (async () => {
+        const malformed = await postCallback(url, { idToken: "" });
+
+        malformedStatus = malformed.status;
+
+        await postCallback(url, { idToken: "ID", refreshToken: "RT" });
+      })();
+    });
+
+    expect(malformedStatus).toBe(400);
+    expect(result).toEqual({ idToken: "ID", refreshToken: "RT" });
+  });
+
   it("rejects when the page reports a sign-in error", async () => {
     await expect(
       performBrowserLogin((url) => {

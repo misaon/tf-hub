@@ -1,4 +1,4 @@
-import { describe, expect, it, spyOn } from "bun:test";
+import { describe, expect, it, mock, spyOn } from "bun:test";
 import { runCommand } from "citty";
 import { consola } from "consola";
 
@@ -7,8 +7,13 @@ import { loginCommand } from "../src/commands/login.ts";
 import { logoutCommand } from "../src/commands/logout.ts";
 import { mcpServerCommand } from "../src/commands/mcp-server.ts";
 import { updateCommand } from "../src/commands/update.ts";
-import { readStoredCredentials, writeStoredCredentials } from "../src/auth/store.ts";
-import { jsonResponse, makeJwt, mockFetch } from "./support.ts";
+import { readStoredCredentials } from "../src/auth/store.ts";
+import { jsonResponse, makeJwt, mockFetch, seedValidSession } from "./support.ts";
+
+const spawnGuard = mock(() => {
+  throw new Error("The update command must not spawn an installer in tests.");
+});
+mock.module("node:child_process", () => ({ spawn: spawnGuard }));
 
 describe("logout command", () => {
   it("informs and changes nothing when already logged out", async () => {
@@ -22,12 +27,7 @@ describe("logout command", () => {
   });
 
   it("clears the stored session when logged in", async () => {
-    await writeStoredCredentials({
-      apiKey: "k",
-      refreshToken: "r",
-      idToken: "x",
-      idTokenExpiresAtMs: Date.now() + 3_600_000,
-    });
+    await seedValidSession();
     const success = spyOn(consola, "success").mockReturnValue(undefined);
 
     await runCommand(logoutCommand, { rawArgs: [] });
@@ -39,12 +39,7 @@ describe("logout command", () => {
 
 describe("login command", () => {
   it("does not start a new login when a session already exists", async () => {
-    await writeStoredCredentials({
-      apiKey: "k",
-      refreshToken: "r",
-      idToken: makeJwt({ name: "Tester" }),
-      idTokenExpiresAtMs: Date.now() + 3_600_000,
-    });
+    await seedValidSession({ idToken: makeJwt({ name: "Tester" }) });
 
     const info = spyOn(consola, "info").mockReturnValue(undefined);
     const serveSpy = spyOn(Bun, "serve");
@@ -84,14 +79,11 @@ describe("update command", () => {
     mockFetch(() => Promise.resolve(jsonResponse({ version: "0.0.1" })));
 
     const success = spyOn(consola, "success").mockReturnValue(undefined);
-    const spawnSpy = spyOn(Bun, "spawn").mockImplementation(() => {
-      throw new Error("must not spawn");
-    });
 
     await runCommand(updateCommand, { rawArgs: [] });
 
     expect(success).toHaveBeenCalledWith(expect.stringContaining("up to date"));
-    expect(spawnSpy).not.toHaveBeenCalled();
+    expect(spawnGuard).not.toHaveBeenCalled();
   });
 
   it("errors cleanly when the registry is unreachable", async () => {

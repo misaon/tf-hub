@@ -29,7 +29,7 @@ const officeAbsenceListSchema = z.array(zOfficeAbsencesDto);
 
 export async function listOfficeAbsences(
   options: Paging & {
-    type?: string | undefined;
+    type?: (typeof officeAbsenceTypes)[number] | undefined;
     states?: string[] | undefined;
     collaboratorUuid?: string | undefined;
     approverUuid?: string | undefined;

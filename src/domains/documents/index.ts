@@ -50,12 +50,12 @@ export const documentsDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "create",
-      description: "Create a document and send it to a collaborator for digital signing (admin).",
+      description: "Create a document and send it to a user for digital signing (admin).",
       input: z.object({
-        userUuid: uuidField("UUID of the collaborator who should sign the document."),
+        userUuid: uuidField("UUID of the user who should sign the document."),
         title: z.string().min(1).describe("Document title."),
         content: z.string().min(1).describe("Full document content (HTML or plain text)."),
-        sentAt: dateTimeField("Date and time when the document is sent, e.g. 2026-06-10T09:00:00."),
+        sentAt: dateTimeField("When the document is sent (YYYY-MM-DD or full ISO date-time)."),
         documentState: z
           .enum(documentStates)
           .default("WAITING_FOR_SIGN")

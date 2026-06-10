@@ -71,7 +71,7 @@ export function selectOperations({ toolsets, readOnly }: OperationFilter = {}): 
     const unknown = toolsets.filter((name) => !known.has(name));
 
     if (unknown.length > 0) {
-      throw new Error(`Unknown toolset(s): ${unknown.join(", ")}. Available: ${[...known].join(", ")}.`);
+      throw new Error(`Unknown toolsets: ${unknown.join(", ")}. Available: ${[...known].join(", ")}.`);
     }
 
     const wanted = new Set(toolsets);

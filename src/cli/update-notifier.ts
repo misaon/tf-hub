@@ -52,7 +52,7 @@ export async function fetchLatestVersion(packageName: string, timeoutMs = networ
   }
 }
 
-// Strict x.y.z comparison; a published pre-release never wins over a stable build.
+// Strict x.y.z comparison; a pre-release never wins, and a stable build supersedes its own pre-releases.
 function isNewerVersion(candidate: string, current: string): boolean {
   if (candidate.includes("-")) {
     return false;
@@ -69,7 +69,7 @@ function isNewerVersion(candidate: string, current: string): boolean {
     }
   }
 
-  return false;
+  return current.includes("-");
 }
 
 export function selectUpdateNotice(currentVersion: string, latestVersion: string | null): string | null {

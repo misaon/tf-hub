@@ -56,7 +56,7 @@ export const gameDomain: RegistryEntry = defineDomain({
       action: "show",
       description:
         "Show The Game (company XP gamification) leaderboard for a month: every player's level, XP from project " +
-        "worklogs and sitdown ratings, bonus XP received, and whether the month is locked. Leagues: DEV, TL.",
+        "worklogs and sitdown ratings, bonus XP received, and whether the month is locked. Leagues: DEV, TL, QA.",
       input: monthInput,
       positionals: ["month"],
       run: (input) => getGameMonth(input),
@@ -82,13 +82,13 @@ export const gameDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "bonus-give",
       description:
-        "Donate bonus XP to a colleague in The Game for a given month, with a note explaining why. Each donor has " +
-        "a monthly XP allowance (see `game-donors`). Recipient IDs come from `game-show` or `collaborators-list`.",
+        "Donate bonus XP to a collaborator in The Game for a given month, with a note explaining why. Each donor " +
+        "has a monthly XP allowance (see `game-donors`). Recipient IDs come from `game-show` or `collaborators-list`.",
       input: z.object({
         month: monthField(),
         recipientId: idField("Numeric ID of the collaborator receiving the XP."),
         value: z.coerce.number().int().min(1).describe("Amount of XP to donate (at least 1)."),
-        description: z.string().min(1).describe("Why the colleague deserves the bonus XP."),
+        description: z.string().min(1).describe("Why the collaborator deserves the bonus XP."),
         includeToHeroes: z
           .boolean()
           .default(true)
@@ -121,8 +121,8 @@ export const gameDomain: RegistryEntry = defineDomain({
     }),
     lockAction(
       "lock",
-      "Lock The Game for a month (game managers): finalizes the monthly ranking and prevents further bonus XP changes.",
+      "Lock The Game for a month: finalizes the monthly ranking and prevents further bonus XP changes (game managers).",
     ),
-    lockAction("unlock", "Unlock The Game for a month (game managers), allowing bonus XP changes again."),
+    lockAction("unlock", "Unlock The Game for a month, allowing bonus XP changes again (game managers)."),
   ],
 });

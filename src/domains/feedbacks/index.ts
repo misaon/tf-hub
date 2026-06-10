@@ -27,7 +27,9 @@ async function listMyFeedbacks(options: { fromDate: string; toDate: string }): P
   return feedbackListSchema.parse(await callApi(`${feedbacksPath}/my-feedbacks`, { query: options }));
 }
 
-const fromDateField = dateField("Only feedback covering periods from this date (YYYY-MM-DD).").default(allTimeFromDate);
+const fromDateField = dateField("Only feedback covering periods on or after this date (YYYY-MM-DD).").default(
+  allTimeFromDate,
+);
 const toDateField = dateField("Only feedback covering periods on or before this date (YYYY-MM-DD).").default(
   allTimeToDate,
 );

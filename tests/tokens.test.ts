@@ -1,8 +1,8 @@
 import { describe, expect, it, spyOn } from "bun:test";
 
-import { readStoredCredentials, writeStoredCredentials } from "../src/auth/store.ts";
+import { readStoredCredentials } from "../src/auth/store.ts";
 import { getValidIdToken, refreshIdToken } from "../src/auth/tokens.ts";
-import { jsonResponse } from "./support.ts";
+import { jsonResponse, seedValidSession } from "./support.ts";
 
 const oneHourMs = 3_600_000;
 
@@ -31,7 +31,7 @@ describe("refreshIdToken", () => {
 
   it("asks for a new login when the session is expired or revoked", async () => {
     spyOn(globalThis, "fetch").mockResolvedValue(new Response("bad", { status: 400 }));
-    await expect(refreshIdToken("k", "r")).rejects.toThrow(/Session expired or revoked/u);
+    await expect(refreshIdToken("k", "r")).rejects.toThrow(/session has expired or was revoked/u);
   });
 
   it("throws with the HTTP status on other refresh failures", async () => {
@@ -42,12 +42,7 @@ describe("refreshIdToken", () => {
 
 describe("getValidIdToken", () => {
   it("returns the cached token without a network call when it is still valid", async () => {
-    await writeStoredCredentials({
-      apiKey: "k",
-      refreshToken: "r",
-      idToken: "CACHED",
-      idTokenExpiresAtMs: Date.now() + oneHourMs,
-    });
+    await seedValidSession({ idToken: "CACHED", idTokenExpiresAtMs: Date.now() + oneHourMs });
 
     const fetchSpy = spyOn(globalThis, "fetch").mockRejectedValue(new Error("must not refresh"));
 
@@ -56,12 +51,7 @@ describe("getValidIdToken", () => {
   });
 
   it("refreshes when the token is within the expiry safety window", async () => {
-    await writeStoredCredentials({
-      apiKey: "k",
-      refreshToken: "OLD",
-      idToken: "OLD_ID",
-      idTokenExpiresAtMs: Date.now() + 30_000,
-    });
+    await seedValidSession({ refreshToken: "OLD", idToken: "OLD_ID", idTokenExpiresAtMs: Date.now() + 30_000 });
     spyOn(globalThis, "fetch").mockResolvedValue(
       jsonResponse({ id_token: "FRESH", refresh_token: "NEW", expires_in: "3600" }),
     );
@@ -70,12 +60,7 @@ describe("getValidIdToken", () => {
   });
 
   it("refreshes and persists the new token when the cached one expired", async () => {
-    await writeStoredCredentials({
-      apiKey: "k",
-      refreshToken: "OLD",
-      idToken: "OLD_ID",
-      idTokenExpiresAtMs: Date.now() - 1000,
-    });
+    await seedValidSession({ refreshToken: "OLD", idToken: "OLD_ID", idTokenExpiresAtMs: Date.now() - 1000 });
     spyOn(globalThis, "fetch").mockResolvedValue(
       jsonResponse({ id_token: "FRESH", refresh_token: "NEW", expires_in: "3600" }),
     );
