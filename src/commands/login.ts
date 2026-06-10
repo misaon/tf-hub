@@ -8,7 +8,7 @@ import { defineCommand } from "../cli/command.ts";
 export const loginCommand = defineCommand({
   meta: {
     name: "login",
-    description: "Authenticate with Google and store the session in your OS keychain. Opens your browser.",
+    description: "Authenticate with Google in your browser; the session is stored locally.",
   },
   async run() {
     const existingSession = await readStoredCredentials();

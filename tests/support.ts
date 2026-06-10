@@ -1,4 +1,4 @@
-import { beforeEach, spyOn, type Mock } from "bun:test";
+import { spyOn, type Mock } from "bun:test";
 
 type FetchImplementation = (
   input: Parameters<typeof fetch>[0],
@@ -17,25 +17,4 @@ const encodeJwtSegment = (value: object): string => Buffer.from(JSON.stringify(v
 
 export function makeJwt(payload: object): string {
   return `${encodeJwtSegment({ alg: "RS256", typ: "JWT" })}.${encodeJwtSegment(payload)}.signature`;
-}
-
-const keyOf = (service: string, name: string): string => `${service}:${name}`;
-
-export function useInMemoryKeychain(): void {
-  const store = new Map<string, string>();
-
-  beforeEach(() => {
-    store.clear();
-    spyOn(Bun.secrets, "get").mockImplementation(({ service, name }) =>
-      Promise.resolve(store.get(keyOf(service, name)) ?? null),
-    );
-    spyOn(Bun.secrets, "set").mockImplementation(({ service, name, value }) => {
-      store.set(keyOf(service, name), value);
-
-      return Promise.resolve();
-    });
-    spyOn(Bun.secrets, "delete").mockImplementation(({ service, name }) =>
-      Promise.resolve(store.delete(keyOf(service, name))),
-    );
-  });
 }

@@ -6,7 +6,7 @@ import { defineCommand } from "../cli/command.ts";
 export const logoutCommand = defineCommand({
   meta: {
     name: "logout",
-    description: "Remove the stored session from your OS keychain.",
+    description: "Remove the locally stored session.",
   },
   async run() {
     const session = await readStoredCredentials();
