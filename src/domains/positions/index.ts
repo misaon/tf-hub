@@ -25,13 +25,13 @@ async function updatePosition(options: { id: number; permissionsIds: number[]; o
 
 export const positionsDomain: RegistryEntry = defineDomain({
   name: "positions",
-  description: "Job positions with their permissions, game leagues and assigned collaborators.",
+  description: "Job positions with permissions and game leagues.",
   actions: [
     defineAction({
       action: "list",
       description:
-        "List job positions with their permissions, game league (DEV/TL/QA), cost categories, auditors and " +
-        "assigned collaborators.",
+        "List job positions. Each carries its permissions, game league (DEV/TL/QA), cost categories, auditors " +
+        "and assigned collaborators.",
       input: z.object({ limit: limitField, offset: offsetField }),
       run: (input) => listPositions(input),
       render: tableRenderer<Position>([

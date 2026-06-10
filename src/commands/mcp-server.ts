@@ -8,19 +8,17 @@ import { mcpConsola, startMcpServer } from "../mcp/server.ts";
 export const mcpServerCommand = defineCommand({
   meta: {
     name: "mcp-server",
-    description: "Start a local MCP server (stdio) exposing the data commands as tools.",
+    description: "Start a local MCP server exposing the commands as tools.",
   },
   args: {
     toolsets: {
       type: "string",
-      description:
-        "Comma-separated domains to expose (e.g. worklogs,absences,me). Default: all. " +
-        "Useful for clients with tool limits.",
+      description: "Only expose these comma-separated domains.",
     },
     readOnly: {
       type: "boolean",
       default: false,
-      description: "Expose only read-only tools (no create/update/delete).",
+      description: "Expose only read-only tools.",
     },
   },
   async run({ args }) {

@@ -64,7 +64,7 @@ const collaboratorDetails = detailsRenderer<Collaborator>([
 
 export const colleaguesDomain: RegistryEntry = defineDomain({
   name: "colleagues",
-  description: "Public company directory: browse colleague profiles.",
+  description: "Public company directory of colleague profiles.",
   actions: [
     defineAction({
       action: "list",
@@ -104,12 +104,12 @@ export const colleaguesDomain: RegistryEntry = defineDomain({
 
 export const collaboratorsDomain: RegistryEntry = defineDomain({
   name: "collaborators",
-  description: "Employee administration: profiles, approvers, labels, language and security confirmation.",
+  description: "Employee administration: profiles, approvers, labels.",
   actions: [
     defineAction({
       action: "list",
       description:
-        "List all collaborators (employees) with admin-level detail: positions, permissions, approvers, labels, " +
+        "List all collaborators with admin-level detail. Includes positions, permissions, approvers, labels and " +
         "game state. Supports filtering. Requires user-management permission; for the public directory use " +
         "`colleagues-list`.",
       input: z.object({
@@ -173,7 +173,7 @@ export const collaboratorsDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "update-bio",
-      description: "Update the bio (about) text shown on a colleague's public profile (self or managers).",
+      description: "Update a colleague's public bio text (self or managers). The bio appears on the public profile.",
       input: z.object({
         uuid: uuidField("UUID of the collaborator whose bio to update."),
         bioText: z.string().describe("New bio text."),
@@ -184,7 +184,7 @@ export const collaboratorsDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "set-language",
-      description: "Set the signed-in user's preferred communication language in TF Hub.",
+      description: "Set the signed-in user's preferred language. It is used for TF Hub communication.",
       input: z.object({
         language: z.enum(["cs", "en"]).describe("Preferred language: cs (Czech) or en (English)."),
       }),
@@ -199,8 +199,8 @@ export const collaboratorsDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "confirm-security",
       description:
-        "Confirm that the signed-in user has read and accepted the company IT security policy. " +
-        "Records today's date as the confirmation date.",
+        "Confirm the company IT security policy. The signed-in user confirms they have read and " +
+        "accepted it; records today's date as the confirmation date.",
       input: z.object({}),
       async run() {
         const uuid = await getCurrentCollaboratorUuid();
@@ -211,7 +211,7 @@ export const collaboratorsDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "labels",
-      description: "List all unique labels (free-text tags) used across collaborator profiles.",
+      description: "List all unique collaborator labels. They are free-text tags used across profiles.",
       input: z.object({}),
       run: () => listCollaboratorLabels(),
       render(labels) {

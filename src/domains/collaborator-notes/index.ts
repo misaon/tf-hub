@@ -55,13 +55,13 @@ const noteDetails = detailsRenderer<CollaboratorNote>([
 
 export const collaboratorNotesDomain: RegistryEntry = defineDomain({
   name: "collaborator-notes",
-  description: "Managers' notes about team members (performance, behavior, development areas).",
+  description: "Managers' notes about team members.",
   actions: [
     defineAction({
       action: "list",
       description:
-        "List managers' notes about team members (performance, behavior, development areas). Visible to the " +
-        "team's manager and admins only.",
+        "List managers' notes about team members. They cover performance, behavior and development areas. " +
+        "Visible to the team's manager and admins only.",
       input: z.object({
         limit: limitField,
         offset: offsetField,

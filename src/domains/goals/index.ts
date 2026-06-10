@@ -57,7 +57,7 @@ const visionDetails = detailsRenderer<Vision>([
 
 export const goalsDomain: RegistryEntry = defineDomain({
   name: "goals",
-  description: "Personal development goals of collaborators, aligned with their long-term vision.",
+  description: "Personal development goals of collaborators.",
   actions: [
     defineAction({
       action: "list",
@@ -85,8 +85,8 @@ export const goalsDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "create",
       description:
-        "Create a personal development goal for a collaborator with a start date and deadline. Tip: validate " +
-        "the draft against the person's vision first with `validate-goal`.",
+        "Create a personal development goal for a collaborator. Set the start date and deadline; validating " +
+        "the draft against the person's vision first with `validate-goal` is recommended.",
       input: z.object({
         collaboratorUuid: uuidField("UUID of the collaborator the goal belongs to."),
         message: z
@@ -142,13 +142,13 @@ export const goalsDomain: RegistryEntry = defineDomain({
 
 export const visionDomain: RegistryEntry = defineDomain({
   name: "vision",
-  description: "Long-term professional visions (2-5 year direction) that goals should align with.",
+  description: "Long-term professional visions (2-5 year direction).",
   actions: [
     defineAction({
       action: "show",
       description:
-        "Show a collaborator's long-term professional vision (2-5 year direction) that their goals should align " +
-        "with. Defaults to the signed-in user.",
+        "Show a collaborator's long-term professional vision. It sets the 2-5 year direction their goals " +
+        "should align with. Defaults to the signed-in user.",
       input: z.object({
         collaboratorUuid: uuidField("UUID of the collaborator; defaults to the signed-in user.").optional(),
       }),

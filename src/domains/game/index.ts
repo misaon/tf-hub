@@ -50,13 +50,13 @@ function lockAction(action: "lock" | "unlock", description: string): DomainActio
 
 export const gameDomain: RegistryEntry = defineDomain({
   name: "game",
-  description: "The Game — company XP gamification: leaderboards, bonus XP donations and month locking.",
+  description: "The Game: XP leaderboards, bonus XP and month locking.",
   actions: [
     defineAction({
       action: "show",
       description:
-        "Show The Game (company XP gamification) leaderboard for a month: every player's level, XP from project " +
-        "worklogs and sitdown ratings, bonus XP received, and whether the month is locked. Leagues: DEV, TL, QA.",
+        "Show The Game leaderboard for a month. Includes every player's level, XP from project worklogs and " +
+        "sitdown ratings, bonus XP received, and whether the month is locked. Leagues: DEV, TL, QA.",
       input: monthInput,
       positionals: ["month"],
       run: (input) => getGameMonth(input),
@@ -65,7 +65,7 @@ export const gameDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "donors",
       description:
-        "List collaborators eligible to donate bonus XP in a month, with their remaining donation allowance.",
+        "List collaborators eligible to donate bonus XP in a month. Shows their remaining donation allowance.",
       input: monthInput,
       positionals: ["month"],
       run: (input) => listGameDonors(input),
@@ -73,7 +73,7 @@ export const gameDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "donated",
-      description: "List collaborators who received bonus XP donations in a month, with the donated amounts.",
+      description: "List collaborators who received bonus XP in a month. Shows the donated amounts.",
       input: monthInput,
       positionals: ["month"],
       run: (input) => listGameDonatedCollaborators(input),
@@ -82,8 +82,9 @@ export const gameDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "bonus-give",
       description:
-        "Donate bonus XP to a collaborator in The Game for a given month, with a note explaining why. Each donor " +
-        "has a monthly XP allowance (see `game-donors`). Recipient IDs come from `game-show` or `collaborators-list`.",
+        "Donate bonus XP to a collaborator in The Game. The donation belongs to a month and carries a note " +
+        "explaining why. Each donor has a monthly XP allowance (see `game-donors`); recipient IDs come from " +
+        "`game-show` or `collaborators-list`.",
       input: z.object({
         month: monthField(),
         recipientId: idField("Numeric ID of the collaborator receiving the XP."),
@@ -123,6 +124,6 @@ export const gameDomain: RegistryEntry = defineDomain({
       "lock",
       "Lock The Game for a month: finalizes the monthly ranking and prevents further bonus XP changes (game managers).",
     ),
-    lockAction("unlock", "Unlock The Game for a month, allowing bonus XP changes again (game managers)."),
+    lockAction("unlock", "Unlock The Game for a month (game managers). Allows bonus XP changes again."),
   ],
 });

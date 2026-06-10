@@ -50,12 +50,12 @@ const hours = (minutes: number | null | undefined): string =>
 
 export const workingTimeDomain: RegistryEntry = defineDomain({
   name: "working-time",
-  description: "Legally required attendance records (daily work blocks), separate from worklogs.",
+  description: "Legal attendance records, separate from worklogs.",
   actions: [
     defineAction({
       action: "list",
       description:
-        "List working time records — the legally required attendance records (start/end of work per day), " +
+        "List working time records (legal attendance). They record the start and end of work per day and are " +
         "separate from worklogs. Regular users see their own records.",
       input: z.object({
         limit: limitField,
@@ -81,7 +81,8 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "show",
       description:
-        "Show the working time record for one month with all daily work blocks (start/end times, vacation, illness).",
+        "Show the working time record for one month. Includes all daily work blocks (start/end times, " +
+        "vacation, illness).",
       input: z.object({
         month: monthField(),
         collaboratorUuid: uuidField("Record owner; defaults to the signed-in user.").optional(),
@@ -124,8 +125,8 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "item-update",
       description:
-        "Replace the daily work blocks of a working time record item (one collaborator, one month, one legal " +
-        "type). Rules: max 6h per block, max 12h per day, 30-minute gap between blocks, no overlaps.",
+        "Replace the daily blocks of a working time record item. One item covers one collaborator, month " +
+        "and legal type. Rules: max 6h per block, max 12h per day, 30-minute gap between blocks, no overlaps.",
       input: z.object({
         id: idField("Numeric ID of the working time record item (see `working-time-show`)."),
         state: z.enum(workingTimeRecordStates).describe(stateDescription),
@@ -176,7 +177,8 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "regenerate",
-      description: "Regenerate the working time records for a month from source data (HR administration).",
+      description:
+        "Regenerate the working time records for a month. Rebuilds them from source data (HR administration).",
       input: z.object({ month: monthField() }),
       positionals: ["month"],
       async run(input) {

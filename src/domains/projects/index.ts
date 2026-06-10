@@ -51,7 +51,7 @@ const projectDetails = detailsRenderer<Project>([
 
 export const projectsDomain: RegistryEntry = defineDomain({
   name: "projects",
-  description: "Company projects synced from TF-ERP: configuration, leaders and sitdown reports.",
+  description: "Company projects: configuration, leaders, reports.",
   actions: [
     defineAction({
       action: "list",
@@ -85,7 +85,8 @@ export const projectsDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "set-leader",
-      description: "Assign a new project leader (team lead) starting from a given month (project management).",
+      description:
+        "Assign a new project leader (team lead). The leadership starts from the given month (project management).",
       input: z.object({
         id: idField("Numeric ID of the project."),
         leaderId: idField("Numeric ID of the collaborator who becomes the leader."),
@@ -167,8 +168,7 @@ export const sonarDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "fetch",
-      description:
-        "Fetch fresh metrics from SonarCloud for a project and store them (requires configured integration).",
+      description: "Fetch fresh SonarCloud metrics for a project and store them. Requires a configured integration.",
       input: z.object({ projectUuid: uuidField("UUID of the project.") }),
       positionals: ["projectUuid"],
       async run(input) {

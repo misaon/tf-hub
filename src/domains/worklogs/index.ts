@@ -59,7 +59,7 @@ const worklogColumns = (descriptionLength: number): ColumnSpec<Worklog>[] => [
 
 export const worklogsDomain: RegistryEntry = defineDomain({
   name: "worklogs",
-  description: "Project time tracking: logged hours per cost category, sums and statistics. Feeds The Game XP.",
+  description: "Project time tracking and sums per cost category.",
   actions: [
     defineAction({
       action: "list",
@@ -143,8 +143,8 @@ export const worklogsDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "category-sum",
       description:
-        "Sum the logged time per cost category for the selected period and filters. The timeSpent values are " +
-        "in minutes.",
+        "Sum the logged time per cost category. Applies the selected period and filters; the timeSpent values " +
+        "are in minutes.",
       input: filterInput,
       async run({ mine, collaboratorUuid, ...rest }) {
         return getWorklogCategorySum({
@@ -160,7 +160,7 @@ export const worklogsDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "year-stats",
       description:
-        "Show monthly logged time per cost category for the year ending at the given date (12 months back). " +
+        "Show monthly logged time per cost category. Covers the 12 months ending at the given date. " +
         "The timeSpent values are in minutes.",
       input: z.object({
         toDate: dateField("End of the one-year window (YYYY-MM-DD), e.g. today."),

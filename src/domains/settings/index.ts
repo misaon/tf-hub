@@ -42,7 +42,7 @@ const settingsDetails = detailsRenderer<Settings>([
 
 export const settingsDomain: RegistryEntry = defineDomain({
   name: "settings",
-  description: "Global TF Hub configuration: approvers, Slack channels, worklog limits and merch.",
+  description: "Global configuration: approvers, channels, limits.",
   actions: [
     defineAction({
       action: "show",
@@ -78,8 +78,8 @@ export const merchRequestEntry: RegistryEntry = standaloneEntry(
   defineOperation({
     name: "merch-request",
     description:
-      "Request company merchandise (e.g. a t-shirt) for the signed-in user. The request is emailed to the merch " +
-      "coordinator. Available products are listed in `settings-show` (merchProducts).",
+      "Request company merchandise for the signed-in user. The request (e.g. a t-shirt) is emailed to the " +
+      "merch coordinator. Available products are listed in `settings-show` (merchProducts).",
     input: z.object({
       product: z.string().min(1).describe("The merch product to request."),
     }),

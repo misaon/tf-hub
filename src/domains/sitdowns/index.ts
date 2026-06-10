@@ -88,13 +88,13 @@ const checkDescription = (subject: string): string => `Whether ${subject} (true/
 
 export const sitdownsDomain: RegistryEntry = defineDomain({
   name: "sitdowns",
-  description: "Sitdowns — the regular project team meetings where teams rate project health and set goals.",
+  description: "Team meetings rating project health and setting goals.",
   actions: [
     defineAction({
       action: "list",
       description:
-        "List sitdowns — the regular project team meetings where teams rate project health and set goals — for " +
-        "a month (optionally including previous months).",
+        "List the sitdowns of a month. Sitdowns are the regular project team meetings where teams rate project " +
+        "health and set goals; include previous months with monthsBack.",
       input: monthFilterInput,
       positionals: ["month"],
       run: (input) => listSitdowns(input),
@@ -136,13 +136,13 @@ export const sitdownsDomain: RegistryEntry = defineDomain({
 
 export const sitdownNotesDomain: RegistryEntry = defineDomain({
   name: "sitdown-notes",
-  description: "Project goals and action items with deadlines agreed at sitdowns.",
+  description: "Project goals and action items agreed at sitdowns.",
   actions: [
     defineAction({
       action: "list",
       description:
-        "List sitdown notes — project goals and action items with deadlines agreed at sitdowns. Resolved notes " +
-        "are soft-deleted; include them with withDeleted.",
+        "List sitdown notes. They are the project goals and action items with deadlines agreed at sitdowns. " +
+        "Resolved notes are soft-deleted; include them with withDeleted.",
       input: z.object({
         limit: limitField,
         offset: offsetField,
@@ -186,7 +186,7 @@ export const sitdownNotesDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "delete",
-      description: "Resolve (soft-delete) a sitdown note — the usual way to mark a project goal as done.",
+      description: "Resolve (soft-delete) a sitdown note. This is the usual way to mark a project goal as done.",
       input: z.object({ id: idField("Numeric ID of the sitdown note.") }),
       positionals: ["id"],
       async run(input) {
@@ -203,7 +203,7 @@ export const sitdownNotesDomain: RegistryEntry = defineDomain({
 
 export const sitdownTimesDomain: RegistryEntry = defineDomain({
   name: "sitdown-times",
-  description: "Recurring sitdown time slots that projects are assigned to.",
+  description: "Recurring sitdown time slots for projects.",
   actions: [
     defineAction({
       action: "list",
@@ -216,7 +216,7 @@ export const sitdownTimesDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "create",
-      description: "Create a recurring sitdown time slot that projects can be assigned to.",
+      description: "Create a recurring sitdown time slot. Projects can then be assigned to it.",
       input: z.object({
         name: z.string().min(1).describe("Name of the slot, e.g. 'Monday 10:00'."),
         time: z.string().min(1).describe("Time of day (HH:mm), e.g. 10:00."),
@@ -240,7 +240,7 @@ export const sitdownTimesDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "delete",
-      description: "Delete a recurring sitdown time slot (must not be used by any project).",
+      description: "Delete a recurring sitdown time slot. It must not be used by any project.",
       input: z.object({ id: idField("Numeric ID of the sitdown time slot.") }),
       positionals: ["id"],
       async run(input) {
