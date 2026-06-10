@@ -1,6 +1,5 @@
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import { once } from "node:events";
 import { consola } from "consola";
+import { H3, HTTPError, html, readValidatedBody, serve } from "h3";
 import open from "open";
 import { z } from "zod";
 
@@ -41,31 +40,6 @@ export function buildLoginPage(): string {
     .replace("__FIREBASE_CONFIG__", JSON.stringify(config));
 }
 
-async function readJsonBody(request: IncomingMessage): Promise<unknown> {
-  const chunks: Buffer[] = [];
-
-  for await (const chunk of request) {
-    chunks.push(chunk);
-  }
-
-  try {
-    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
-  } catch {
-    return null;
-  }
-}
-
-interface Reply {
-  status: number;
-  body: string;
-  contentType?: string;
-}
-
-function respond(response: ServerResponse, { status, body, contentType = "text/plain" }: Reply): void {
-  response.writeHead(status, { "content-type": contentType });
-  response.end(body);
-}
-
 export async function performBrowserLogin(
   launchBrowser: (url: string) => void = (url) =>
     void open(url).catch(() => consola.warn(`Couldn't open a browser. Open this URL manually:\n${url}`)),
@@ -76,66 +50,54 @@ export async function performBrowserLogin(
     reject: rejectResult,
   } = Promise.withResolvers<BrowserLoginResult>();
 
-  const server = createServer((request, response) => {
-    void handleRequest(request, response);
-  });
-
-  async function handleRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
-    if (request.url === "/" && request.method === "GET") {
-      respond(response, { status: 200, body: buildLoginPage(), contentType: "text/html; charset=utf-8" });
-
-      return;
-    }
-
-    if (request.url === "/callback" && request.method === "POST") {
-      if (!request.headers["content-type"]?.includes("application/json")) {
-        respond(response, { status: 415, body: "Unsupported Media Type" });
-
-        return;
+  const app = new H3()
+    .get("/", () => html(buildLoginPage()))
+    .post("/callback", async (event) => {
+      if (!event.req.headers.get("content-type")?.includes("application/json")) {
+        throw new HTTPError({ status: 415 });
       }
 
-      const payload = callbackPayloadSchema.safeParse(await readJsonBody(request));
-
-      if (!payload.success) {
+      const payload = await readValidatedBody(event, callbackPayloadSchema).catch((error: unknown) => {
         rejectResult(new Error("Incomplete response from the browser."));
-        respond(response, { status: 400, body: "Bad Request" });
+        throw error;
+      });
 
-        return;
-      }
-
-      if ("error" in payload.data) {
-        rejectResult(new Error(payload.data.error));
+      if ("error" in payload) {
+        rejectResult(new Error(payload.error));
       } else {
-        resolveResult(payload.data);
+        resolveResult(payload);
       }
 
-      respond(response, { status: 200, body: "OK" });
+      return "OK";
+    });
 
-      return;
-    }
-
-    respond(response, { status: 404, body: "Not found" });
-  }
-
-  server.listen(0, "localhost");
-  await once(server, "listening");
-
-  const address = server.address();
-
-  if (address === null || typeof address === "string") {
-    throw new Error("Could not determine the local login server port.");
-  }
-
-  const loginUrl = `http://localhost:${address.port}/`;
-
-  consola.info(`Opening browser: ${loginUrl}`);
-  launchBrowser(loginUrl);
-  consola.start("Waiting for sign-in to complete in the browser…");
+  const server = await serve(app, {
+    port: 0,
+    hostname: "localhost",
+    silent: true,
+    gracefulShutdown: false,
+  }).ready();
 
   try {
+    const boundPort = server.url ? new URL(server.url).port : "";
+
+    if (boundPort === "") {
+      throw new Error("Could not determine the local login server port.");
+    }
+
+    // Firebase only authorizes the literal `localhost` origin, so never hand the browser the raw bound address.
+    const loginUrl = `http://localhost:${boundPort}/`;
+
+    consola.info(`Opening browser: ${loginUrl}`);
+    launchBrowser(loginUrl);
+    consola.start("Waiting for sign-in to complete in the browser…");
+
     return await resultPromise;
   } finally {
-    server.closeAllConnections();
-    server.close();
+    // Graceful close lets the final callback response flush; the timer force-closes lingering connections.
+    const forceCloseTimer = setTimeout(() => void server.close(true), 1000);
+
+    await server.close();
+    clearTimeout(forceCloseTimer);
   }
 }
