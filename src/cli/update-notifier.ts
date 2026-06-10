@@ -8,7 +8,7 @@ import { z } from "zod";
 
 import { repositoryUrl } from "../config.ts";
 
-const checkIntervalMs = 24 * 60 * 60 * 1000;
+const checkIntervalMs = 5 * 60 * 1000;
 const networkTimeoutMs = 1500;
 
 const cacheSchema = z.object({ checkedAt: z.number(), latestVersion: z.string() });

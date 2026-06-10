@@ -35,7 +35,15 @@ const targets: PlatformTarget[] = [
 async function compile(target: PlatformTarget): Promise<string> {
   const outfile = `artifacts/release/${target.assetName}`;
   const build = Bun.spawn(
-    ["bun", "build", "src/index.ts", "--compile", `--target=${target.compileTarget}`, `--outfile=${outfile}`],
+    [
+      "bun",
+      "build",
+      "src/index.ts",
+      "--compile",
+      "--minify",
+      `--target=${target.compileTarget}`,
+      `--outfile=${outfile}`,
+    ],
     { stdout: "ignore", stderr: "inherit" },
   );
 

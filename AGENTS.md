@@ -14,7 +14,9 @@ bun run typecheck       # tsc --noEmit (src, tests, scripts, configs)
 bun run lint            # oxlint, deny-warnings
 bun run fmt             # oxfmt
 bun run knip            # unused exports, files and dependencies
-bun run build           # node-ready bundle to dist/index.mjs (CI enforces a size budget)
+bun run build           # node-ready bundle to dist/index.mjs (CI enforces a size budget); the
+                        # `--conditions=worker` flag makes ofetch resolve to its universal entry —
+                        # Node >= 22 has native fetch, so bundling node-fetch-native would be dead weight
 bun run build:binary    # standalone executable for the current platform (dist/tf-hub)
 bun run generate        # refresh the OpenAPI spec and regenerate Zod schemas
 ```
