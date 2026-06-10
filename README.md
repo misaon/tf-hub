@@ -22,15 +22,27 @@ bonus XP. And because every command doubles as an MCP tool, your AI agent can do
 
 ## Install
 
-Requires [Bun](https://bun.sh) ≥ 1.2.21 (the OS keychain integration needs it).
+**Via npm** — Node ≥ 20 is all you need; the install is about two megabytes:
 
 ```sh
-bun add -g @misaon/tf-hub
+npm install -g @misaon/tf-hub
 ```
+
+**Direct download** — grab the build for your platform from the
+[latest release](https://github.com/misaon/tf-hub/releases/latest), make it executable and put it on your `PATH`:
+
+```sh
+curl -fsSL -o tf-hub https://github.com/misaon/tf-hub/releases/latest/download/tf-hub-darwin-arm64
+chmod +x tf-hub && mv tf-hub /usr/local/bin/
+```
+
+Builds are published for macOS (arm64, x64), Linux (x64, arm64) and Windows (x64), with a `SHA256SUMS`
+file next to them. macOS quarantines binaries downloaded through a browser — either use `curl` as above,
+or clear the flag with `xattr -d com.apple.quarantine tf-hub`.
 
 ## Usage
 
-Sign in once; the session lives in your OS keychain and refreshes itself:
+Sign in once; the session is stored locally and refreshes itself:
 
 ```sh
 tf-hub login
@@ -71,7 +83,8 @@ tf-hub mcp-server --read-only                       # no writes at all
 
 ## Security
 
-- Session tokens live in the OS keychain (macOS Keychain, libsecret, Windows Credential Manager) — never in a file.
+- Session tokens live in `~/.config/tf-hub/credentials.json` with owner-only permissions — the same
+  storage model npm, gcloud and docker use.
 - The browser login page pins all third-party scripts with Subresource Integrity hashes.
 - No telemetry. Outbound traffic is limited to the TF Hub API, Google's token endpoint (session
   refresh) and the npm registry (a daily update check you can disable with `NO_UPDATE_NOTIFIER=1`).

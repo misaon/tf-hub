@@ -1,6 +1,7 @@
 # Agent guide
 
-Bun-native CLI and MCP server for the TF Hub API, built on the unjs ecosystem (citty, consola, ofetch).
+CLI and MCP server for the TF Hub API, built on the unjs ecosystem (citty, consola, ofetch). The
+published bundle runs on plain Node; Bun is the development runtime and powers the compiled binaries.
 Small, typed, consistent — the CI gate enforces all of it.
 
 ## Commands
@@ -8,12 +9,13 @@ Small, typed, consistent — the CI gate enforces all of it.
 ```sh
 bun install
 bun run dev -- whoami   # run locally with args
-bun test                # bun:test suite (tests/, preload in bunfig.toml)
+bun test                # bun:test suite (tests/, preload isolates the config directory)
 bun run typecheck       # tsc --noEmit (src, tests, scripts, configs)
 bun run lint            # oxlint, deny-warnings
 bun run fmt             # oxfmt
 bun run knip            # unused exports, files and dependencies
-bun run build           # bundle to dist/index.mjs (CI enforces a size budget)
+bun run build           # node-ready bundle to dist/index.mjs (CI enforces a size budget)
+bun run build:binary    # standalone executable for the current platform (dist/tf-hub)
 bun run generate        # refresh the OpenAPI spec and regenerate Zod schemas
 ```
 
@@ -35,11 +37,16 @@ One folder per feature domain; everything wires up exactly once.
   (`openapi.json` is gitignored; `scripts/update-openapi.ts` documents why responses are made tolerant).
   Never edit generated files; the generated folder is excluded from lint/format/knip.
 - `cli/` — output helpers (`tableRenderer`/`detailsRenderer`/`deletedRenderer`, `formatValue` for the `—`
-  placeholder), the Zod→citty bridge, error handling, update notifier.
+  placeholder), the Zod→citty bridge, error handling, update notifier. The notifier and the `update`
+  command detect standalone binaries (`runsAsStandaloneBinary`) and point those users to the GitHub
+  release assets instead of a package manager; `scripts/build-release-artifacts.ts` cross-compiles
+  the linux/darwin/windows binaries that the release workflow attaches to every GitHub release.
 - `mcp/server.ts` — registers every operation as an MCP tool over stdio. Stdout carries JSON-RPC; logs go
   through `mcpConsola` (stderr). The SDK parses tool arguments — never re-parse them.
 - `commands/` — interactive-only commands (`login`, `logout`, `mcp-server`, `update`).
-- `auth/` — Firebase browser login, OS keychain storage (`Bun.secrets`), token refresh.
+- `auth/` — Firebase browser login (node:http), token refresh, and credential storage in an owner-only
+  file (0600, XDG config path) — the npm/gcloud/docker model, chosen over the OS keychain to avoid
+  keychain confirmation prompts on every invocation.
 - `config.ts` / `runtime.ts` — all constants; runtime holds base64-obfuscated **public** identifiers only.
 
 ## Add an operation
@@ -63,8 +70,10 @@ One folder per feature domain; everything wires up exactly once.
 - Template literals over string concatenation (wrapping long literals across lines with `+` is the
   one allowed use); the newest stable JS/TS syntax that improves clarity
   (labeled tuples, `Promise.withResolvers`, `toSorted`, …).
-- Prefer Bun APIs over `node:*` where an equivalent exists; prefer unjs/maintained libraries over custom
-  code — but never add a dependency to replace fewer than ~10 lines.
+- `src/` must stay Node-compatible: `node:*` and web APIs only, no Bun globals (the lone guarded
+  exception is the compiled-binary check in the update notifier). Bun APIs are fine in `scripts/`
+  and `tests/`. Prefer unjs/maintained libraries over custom code — but never add a dependency to
+  replace fewer than ~10 lines.
 - One logger: consola. MCP mode logs via `mcpConsola` only (stdout must stay clean).
 - Validate untrusted JSON with Zod at the boundary; never cast with `as`.
 - Repeated literals become shared constants/helpers (`formatValue`, field helpers, …).
