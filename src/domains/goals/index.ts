@@ -63,15 +63,25 @@ export const goalsDomain: RegistryEntry = defineDomain({
       action: "list",
       description:
         "List personal development goals of collaborators: goal text, start date, deadline and done/active " +
-        "state. Pass collaboratorUuid to list one person's goals (own goals work without extra permissions).",
+        "state. Use mine=true or pass collaboratorUuid to list one person's goals (own goals work without " +
+        "extra permissions).",
       input: z.object({
         limit: limitField,
         offset: offsetField,
+        mine: z.boolean().default(false).describe("Only goals of the signed-in user."),
         collaboratorUuid: uuidField("Only goals of the collaborator with this UUID.").optional(),
         fromDate: dateField("Only goals created on or after this date (YYYY-MM-DD).").default(allTimeFromDate),
         toDate: dateField("Only goals created on or before this date (YYYY-MM-DD).").default(allTimeToDate),
       }),
-      run: (input) => listGoals(input),
+      async run({ mine, collaboratorUuid, ...rest }) {
+        let resolvedCollaboratorUuid = collaboratorUuid;
+
+        if (resolvedCollaboratorUuid === undefined && mine) {
+          resolvedCollaboratorUuid = await getCurrentCollaboratorUuid();
+        }
+
+        return listGoals({ ...rest, collaboratorUuid: resolvedCollaboratorUuid });
+      },
       render: tableRenderer<Goal>([
         ...goalIdentityColumns,
         ["Done", (goal) => formatValue(goal.done ?? false)],

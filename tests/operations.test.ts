@@ -4,6 +4,7 @@ import { writeStoredCredentials } from "../src/auth/store.ts";
 import { getCurrentCollaborator } from "../src/domains/collaborators/api.ts";
 import { absencesDomain } from "../src/domains/absences";
 import { documentsDomain } from "../src/domains/documents";
+import { goalsDomain } from "../src/domains/goals";
 import { meEntry } from "../src/domains/profile";
 import type { Operation } from "../src/domains/operation.ts";
 import { worklogsDomain } from "../src/domains/worklogs";
@@ -125,6 +126,26 @@ describe("absences-list operation", () => {
 
     const absencesCall = fetchSpy.mock.calls.find(([requestUrl]) => String(requestUrl).includes("/office-absences"));
     expect(String(absencesCall?.[0])).toContain("collaboratorUuid=UUID-1");
+  });
+});
+
+describe("goals-list operation", () => {
+  it("scopes to the current collaborator when mine is set", async () => {
+    await seedValidSession();
+
+    const fetchSpy = mockFetch((input) =>
+      Promise.resolve(
+        String(input).includes("/collaborators/me")
+          ? jsonResponse({ message: "OK", data: me })
+          : jsonResponse({ message: "OK", data: [] }),
+      ),
+    );
+
+    const listOperation = operationByName(goalsDomain.operations, "goals-list");
+    await listOperation.run(listOperation.input.parse({ mine: true }));
+
+    const goalsCall = fetchSpy.mock.calls.find(([requestUrl]) => String(requestUrl).includes("/collaborator-goals"));
+    expect(String(goalsCall?.[0])).toContain("/collaborator-goals/collaborator/UUID-1");
   });
 });
 
