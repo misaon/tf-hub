@@ -1,0 +1,56 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "promise"],
+  "env": { "node": true, "es2024": true },
+  "globals": { "Bun": "readonly" },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error",
+    "pedantic": "error",
+    "style": "error",
+    "restriction": "off",
+    "nursery": "off"
+  },
+  "rules": {
+    "curly": ["error", "all"],
+    "eqeqeq": ["error", "always"],
+    "no-var": "error",
+    "prefer-const": "error",
+    "prefer-template": "error",
+    "object-shorthand": "error",
+    "no-else-return": "error",
+    "prefer-arrow-callback": "error",
+    "no-param-reassign": "error",
+    "yoda": "error",
+    "no-console": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/no-explicit-any": "error",
+    "func-style": ["error", "declaration", { "allowArrowFunctions": true }],
+    "typescript/method-signature-style": "off",
+    "sort-keys": "off",
+    "no-magic-numbers": "off",
+    "sort-imports": "off",
+    "no-ternary": "off",
+    "no-inline-comments": "off",
+    "max-lines-per-function": "off",
+    "max-statements": "off",
+    "promise/prefer-await-to-then": "off",
+    "unicorn/no-null": "off"
+  },
+  "overrides": [
+    {
+      "files": ["tests/**"],
+      "rules": {
+        "unicorn/no-useless-undefined": "off"
+      }
+    },
+    {
+      "files": ["src/mcp/server.ts"],
+      "rules": {
+        "unicorn/prefer-add-event-listener": "off"
+      }
+    }
+  ],
+  "ignorePatterns": ["dist", "src/api/generated"]
+}
