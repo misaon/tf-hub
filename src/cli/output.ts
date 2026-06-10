@@ -6,7 +6,7 @@ import { renderTable } from "./table.ts";
 
 export const jsonArg = {
   type: "boolean",
-  description: "Output raw JSON instead of formatted text.",
+  description: "Output machine-readable JSON.",
   default: false,
 } as const satisfies ArgDef;
 

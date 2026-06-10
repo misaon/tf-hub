@@ -52,13 +52,13 @@ const percent = (value: number | null | undefined): string =>
 
 export const absencesDomain: RegistryEntry = defineDomain({
   name: "absences",
-  description: "Office absences: vacations, home office, business trips, sick leave and their approval flow.",
+  description: "Office absences and their approval flow.",
   actions: [
     defineAction({
       action: "list",
       description:
-        "List office absences (vacations, home office, business trips, sick leave) with their approval state. " +
-        "Approvers also see requests of others — pass mine=true for only your own records.",
+        "List office absences with their approval state. Covers vacations, home office, business trips and " +
+        "sick leave. Approvers also see requests of others — pass mine=true for only your own records.",
       input: z.object({
         limit: limitField,
         offset: offsetField,
@@ -91,7 +91,7 @@ export const absencesDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "create",
       description:
-        "Request a new office absence (vacation, home office, business trip, sick leave). The request goes to " +
+        "Request a new office absence. Covers vacation, home office, business trips and sick leave. The request goes to " +
         "the approver for approval; the general description is shared in the team calendar and Slack.",
       input: z.object({
         type: z.enum(officeAbsenceTypes).describe(absenceTypeDescription),
@@ -152,9 +152,10 @@ export const absencesDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "statistics",
       description:
-        "Show the signed-in user's absence totals for a calendar year, in days (8 hours = 1 day): vacation, " +
-        "home office, illness and inaccessibility, each with the share of the annual allowance. Counts " +
-        "APPROVED and DONE absences for the whole year, so future approved absences are included.",
+        "Show the signed-in user's yearly absence totals. Values are in days (8 hours = 1 day) " +
+        "and cover vacation, home office, illness and inaccessibility, each with the share of the annual " +
+        "allowance. Counts APPROVED and DONE absences for the whole year, so future approved absences are " +
+        "included.",
       input: z.object({
         year: z.coerce.number().int().min(2000).max(2200).describe("Calendar year, e.g. 2026."),
       }),
@@ -173,7 +174,7 @@ export const absencesDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "backup-approver",
       description:
-        "Show the company-wide backup absence approver who handles requests when the primary approver is away.",
+        "Show the company-wide backup absence approver. They handle requests when the primary approver is away.",
       input: z.object({}),
       run: () => getBackupAbsenceApprover(),
       render: detailsRenderer<BackupAbsenceApprover>([

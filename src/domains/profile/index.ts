@@ -40,8 +40,8 @@ export const meEntry: RegistryEntry = standaloneEntry(
   defineOperation({
     name: "me",
     description:
-      "Show the signed-in user's TF Hub identity and profile (uuid, id, email, positions, game state). " +
-      "The bio is omitted — fetch it with colleagues-show when needed.",
+      "Show the signed-in user's TF Hub identity and profile. Includes uuid, id, email, positions and game " +
+      "state. The bio is omitted — fetch it with colleagues-show when needed.",
     input: z.object({}),
     async run() {
       return omitBio(await getCurrentCollaborator());

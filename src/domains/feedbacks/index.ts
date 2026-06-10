@@ -43,12 +43,12 @@ const feedbackTable = tableRenderer<Feedback>([
 
 export const feedbacksDomain: RegistryEntry = defineDomain({
   name: "feedbacks",
-  description: "Periodic colleague feedback ratings (the data behind the feedback heatmap).",
+  description: "Periodic colleague feedback ratings (heatmap data).",
   actions: [
     defineAction({
       action: "list",
       description:
-        "List periodic colleague feedback ratings (BAD/GOOD/GREAT per period) — the data behind the feedback " +
+        "List periodic colleague feedback ratings. The BAD/GOOD/GREAT ratings per period feed the feedback " +
         "heatmap. Visibility depends on permissions (own, team or all); mine=true lists only your own.",
       input: z.object({
         mine: z.boolean().default(false).describe("Only feedback received by the signed-in user."),

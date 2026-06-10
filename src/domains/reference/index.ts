@@ -11,7 +11,7 @@ const listInput = z.object({ limit: limitField, offset: offsetField });
 export const permissionsEntry: RegistryEntry = standaloneEntry(
   defineOperation({
     name: "permissions",
-    description: "List all system permissions (ID, name, code) that can be assigned to positions.",
+    description: "List the system permissions assignable to positions. Shows ID, name and code.",
     input: listInput,
     run: (input) => listPermissions(input),
   }),
@@ -28,8 +28,8 @@ export const costCategoriesEntry: RegistryEntry = standaloneEntry(
   defineOperation({
     name: "cost-categories",
     description:
-      "List cost categories used to classify logged work (worklogs): name, parent category and whether standard " +
-      "logging rules apply.",
+      "List the cost categories that classify logged work. Shows name, parent category and whether " +
+      "standard logging rules apply.",
     input: listInput,
     run: (input) => listCostCategories(input),
   }),

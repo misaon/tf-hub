@@ -25,13 +25,13 @@ const documentColumns: ColumnSpec<Document>[] = [
 
 export const documentsDomain: RegistryEntry = defineDomain({
   name: "documents",
-  description: "Documents for digital signing: contracts, policy acknowledgments and their states.",
+  description: "Documents for digital signing and their states.",
   actions: [
     defineAction({
       action: "list",
       description:
-        "List documents for digital signing (contracts, policy acknowledgments): title, state, recipient and " +
-        "dates. Regular users see their own documents; listing other users' documents requires document-management " +
+        "List documents for digital signing. Shows title, state, recipient and dates for contracts and policy " +
+        "acknowledgments. Regular users see their own documents; listing other users' documents requires document-management " +
         "permission.",
       input: z.object({
         limit: limitField,

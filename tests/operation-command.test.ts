@@ -3,7 +3,7 @@ import { runCommand } from "citty";
 import { consola } from "consola";
 import { z } from "zod";
 
-import { commandFromOperation } from "../src/cli/operation-command.ts";
+import { commandFromOperation, summarize } from "../src/cli/operation-command.ts";
 import { defineOperation } from "../src/domains/operation.ts";
 
 const echoOperation = defineOperation({
@@ -77,5 +77,23 @@ describe("commandFromOperation", () => {
     await runCommand(command, { rawArgs: ["World"] });
 
     expect(render).toHaveBeenCalledWith({ who: "World" });
+  });
+});
+
+describe("summarize", () => {
+  it("keeps only the headline before a detail colon", () => {
+    expect(summarize("List things: every detail imaginable.")).toBe("List things.");
+  });
+
+  it("keeps only the first sentence", () => {
+    expect(summarize("List things. They have details. More details.")).toBe("List things.");
+  });
+
+  it("does not treat abbreviations or examples as a sentence boundary", () => {
+    expect(summarize("Show a month, e.g. 2026-05 works.")).toBe("Show a month, e.g. 2026-05 works.");
+  });
+
+  it("returns a single-sentence description unchanged", () => {
+    expect(summarize("Delete a worklog entry.")).toBe("Delete a worklog entry.");
   });
 });

@@ -75,6 +75,21 @@ function argFromField(field: ZodField, positional: boolean): ArgDef {
   };
 }
 
+const summaryBoundary = /:\s|\.\s+(?=[A-Z`])/u;
+
+// Terminal help shows only the headline; MCP clients receive the full operation description.
+export function summarize(description: string): string {
+  const boundary = summaryBoundary.exec(description);
+
+  if (!boundary) {
+    return description;
+  }
+
+  const headline = description.slice(0, boundary.index);
+
+  return headline.endsWith(".") ? headline : `${headline}.`;
+}
+
 export function commandFromOperation<Shape extends z.ZodRawShape, TOutput>(
   operation: Operation<Shape, TOutput>,
   presentation: OperationPresentation<TOutput>,
@@ -86,7 +101,7 @@ export function commandFromOperation<Shape extends z.ZodRawShape, TOutput>(
   }
 
   return defineCommand({
-    meta: { name: presentation.commandName ?? operation.name, description: operation.description },
+    meta: { name: presentation.commandName ?? operation.name, description: summarize(operation.description) },
     args,
     async run({ args: rawArgs }) {
       const rawInput = Object.fromEntries(Object.keys(operation.input.shape).map((key) => [key, rawArgs[key]]));

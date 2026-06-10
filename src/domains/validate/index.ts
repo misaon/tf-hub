@@ -49,8 +49,8 @@ const validateActions: DomainAction[] = [
   defineAction({
     action: "goal",
     description:
-      "AI-check a goal draft for clarity, achievability and alignment with the person's vision before saving " +
-      "it. Returns a verdict (pass/needs_changes/fail), score, issues and suggestions.",
+      "AI-check a goal draft before saving it. Checks clarity, achievability and alignment with the " +
+      "person's vision. Returns a verdict (pass/needs_changes/fail), score, issues and suggestions.",
     input: z.object({
       goalDraft: z.string().min(1).max(5000).describe("The goal text to validate."),
       vision: visionField,
@@ -75,7 +75,7 @@ const validateActions: DomainAction[] = [
   defineAction({
     action: "1on1",
     description:
-      "AI-check 1on1 meeting notes for clarity and completeness before saving them. Returns a verdict " +
+      "AI-check 1on1 meeting notes before saving them. Checks clarity and completeness. Returns a verdict " +
       "(pass/needs_changes/fail), score, issues and suggestions.",
     input: z.object({
       oneOnOneDraft: z.string().min(1).max(5000).describe("The 1on1 notes to validate."),
@@ -92,6 +92,6 @@ const validateActions: DomainAction[] = [
 
 export const validateDomain: RegistryEntry = defineDomain({
   name: "validate",
-  description: "AI quality checks for goals, visions and 1on1 notes before saving them.",
+  description: "AI quality checks for goals, visions and 1on1 notes.",
   actions: validateActions,
 });

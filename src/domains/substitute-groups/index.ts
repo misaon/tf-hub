@@ -46,7 +46,7 @@ const memberIdsField = commaSeparatedNumbersField(
 
 export const substituteGroupsDomain: RegistryEntry = defineDomain({
   name: "substitute-groups",
-  description: "Teams whose members cover for each other during absences.",
+  description: "Teams whose members cover for each other.",
   actions: [
     defineAction({
       action: "list",
