@@ -13,7 +13,7 @@ import {
   tableRenderer,
   type ColumnSpec,
 } from "../../cli/output.ts";
-import { getCurrentCollaborator } from "../collaborators/api.ts";
+import { getCurrentCollaborator, getCurrentCollaboratorUuid } from "../collaborators/api.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
 import {
   allTimeFromDate,
@@ -40,6 +40,7 @@ import {
 const filterInput = z.object({
   limit: limitField,
   offset: offsetField,
+  mine: z.boolean().default(false).describe("Only worklogs of the signed-in user."),
   fromDate: dateField("Only worklogs on or after this date (YYYY-MM-DD).").default(allTimeFromDate),
   toDate: dateField("Only worklogs on or before this date (YYYY-MM-DD).").default(allTimeToDate),
   collaboratorUuid: uuidField("Only worklogs of the collaborator with this UUID.").optional(),
@@ -66,7 +67,15 @@ export const worklogsDomain: RegistryEntry = defineDomain({
         "List logged work (time tracking): date, time spent, cost category, project and description, plus the " +
         "total time of the selection. Worked hours feed the XP calculation in The Game.",
       input: filterInput,
-      run: (input) => listWorklogs(input),
+      async run({ mine, collaboratorUuid, ...rest }) {
+        let resolvedCollaboratorUuid = collaboratorUuid;
+
+        if (resolvedCollaboratorUuid === undefined && mine) {
+          resolvedCollaboratorUuid = await getCurrentCollaboratorUuid();
+        }
+
+        return listWorklogs({ ...rest, collaboratorUuid: resolvedCollaboratorUuid });
+      },
       render({ worklogs, timeSpentSum }) {
         tableRenderer(worklogColumns(40))(worklogs);
         consola.log(colors.dim(`Total time: ${formatMinutes(timeSpentSum)}`));
@@ -140,7 +149,15 @@ export const worklogsDomain: RegistryEntry = defineDomain({
       action: "category-sum",
       description: "Sum the logged time per cost category for the selected period and filters.",
       input: filterInput,
-      run: (input) => getWorklogCategorySum(input),
+      async run({ mine, collaboratorUuid, ...rest }) {
+        let resolvedCollaboratorUuid = collaboratorUuid;
+
+        if (resolvedCollaboratorUuid === undefined && mine) {
+          resolvedCollaboratorUuid = await getCurrentCollaboratorUuid();
+        }
+
+        return getWorklogCategorySum({ ...rest, collaboratorUuid: resolvedCollaboratorUuid });
+      },
       render: tableRenderer<WorklogCategorySum>([
         ["Category", (sum) => formatValue(sum.costCategory?.name)],
         ["Time", (sum) => formatMinutes(sum.timeSpent)],

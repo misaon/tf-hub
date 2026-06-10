@@ -71,9 +71,18 @@ export const colleaguesDomain: RegistryEntry = defineDomain({
   actions: [
     defineAction({
       action: "list",
-      description: "List the public company directory of colleagues: name, position, department and email.",
+      description:
+        "List the public company directory of colleagues: name, position, department and email. Bios are omitted — use colleagues-show for one person's full profile.",
       input: z.object({ limit: limitField, offset: offsetField }),
-      run: (input) => listPublicCollaborators(input),
+      async run(input) {
+        const collaborators = await listPublicCollaborators(input);
+
+        return collaborators.map(({ bioText, ...rest }) => {
+          void bioText;
+
+          return rest;
+        });
+      },
       render: sortedTableRenderer([
         ["Name", fullName],
         ["Position", positionOf],
@@ -130,7 +139,15 @@ export const collaboratorsDomain: RegistryEntry = defineDomain({
           .describe("Include recently departed collaborators whose employment ended at most this many days ago.")
           .optional(),
       }),
-      run: (input) => listCollaborators(input),
+      async run(input) {
+        const collaborators = await listCollaborators(input);
+
+        return collaborators.map(({ bioText, ...rest }) => {
+          void bioText;
+
+          return rest;
+        });
+      },
       render: sortedTableRenderer([
         ["ID", (collaborator) => formatValue(collaborator.id)],
         ["Name", fullName],
