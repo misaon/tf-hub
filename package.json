@@ -1,6 +1,6 @@
 {
   "name": "@misaon/tf-hub",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Command-line client and MCP server for the TF Hub intranet API",
   "keywords": [
     "bun",
