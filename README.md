@@ -22,7 +22,7 @@ bonus XP. And because every command doubles as an MCP tool, your AI agent can do
 
 ## Install
 
-**Via npm** — Node ≥ 20 is all you need; the install is about two megabytes:
+**Via npm** — Node ≥ 22 is all you need; the install is about two megabytes:
 
 ```sh
 npm install -g @misaon/tf-hub
