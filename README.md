@@ -22,7 +22,7 @@ bonus XP. And because every command doubles as an MCP tool, your AI agent can do
 
 ## Install
 
-**Via npm** — Node ≥ 22 is all you need; the install is about two megabytes:
+**Via npm** — Node ≥ 22 is all you need; the install is under a megabyte:
 
 ```sh
 npm install -g @misaon/tf-hub
@@ -87,7 +87,7 @@ tf-hub mcp-server --read-only                       # no writes at all
   storage model npm, gcloud and docker use.
 - The browser login page pins all third-party scripts with Subresource Integrity hashes.
 - No telemetry. Outbound traffic is limited to the TF Hub API, Google's token endpoint (session
-  refresh) and the npm registry (a daily update check you can disable with `NO_UPDATE_NOTIFIER=1`).
+  refresh) and the npm registry (an update check at most every five minutes, disable with `NO_UPDATE_NOTIFIER=1`).
 
 ## Development
 

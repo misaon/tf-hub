@@ -29,8 +29,8 @@
   },
   "scripts": {
     "dev": "bun run src/index.ts",
-    "build": "bun build src/index.ts --target=node --outfile dist/index.mjs",
-    "build:binary": "bun build src/index.ts --compile --outfile dist/tf-hub",
+    "build": "bun build src/index.ts --target=node --minify --conditions=worker --outfile dist/index.mjs",
+    "build:binary": "bun build src/index.ts --compile --minify --outfile dist/tf-hub",
     "generate": "bun scripts/update-openapi.ts && openapi-ts",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint --deny-warnings",
