@@ -46,7 +46,7 @@ One folder per feature domain; everything wires up exactly once.
 - `mcp/server.ts` — registers every operation as an MCP tool over stdio. Stdout carries JSON-RPC; logs go
   through `mcpConsola` (stderr). The SDK parses tool arguments — never re-parse them.
 - `commands/` — interactive-only commands (`login`, `logout`, `mcp-server`, `update`).
-- `auth/` — Firebase browser login (node:http), token refresh, and credential storage in an owner-only
+- `auth/` — Firebase browser login (h3), token refresh, and credential storage in an owner-only
   file (0600, XDG config path) — the npm/gcloud/docker model, chosen over the OS keychain to avoid
   keychain confirmation prompts on every invocation.
 - `config.ts` / `runtime.ts` — all constants; runtime holds base64-obfuscated **public** identifiers only.

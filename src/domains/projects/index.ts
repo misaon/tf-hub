@@ -65,7 +65,7 @@ export const projectsDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "update",
       description:
-        "Update a project's Hub configuration: SonarCloud integration, Slack channel, sitdown time slot and " +
+        "Update a project's TF Hub configuration: SonarCloud integration, Slack channel, sitdown time slot and " +
         "sitdown visibility (project management). Core project data is synced from TF-ERP and cannot be edited here.",
       input: z.object({
         id: idField("Numeric ID of the project (see `projects-list`)."),

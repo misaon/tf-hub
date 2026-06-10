@@ -12,11 +12,14 @@ const serverInstructions =
   "TF Hub is the company intranet: people directory (colleagues, collaborators), documents for digital " +
   "signing, The Game (XP gamification), office absences with an approval flow, worklogs (project time " +
   "tracking), working-time records (legal attendance), projects with sitdown meetings (health ratings, " +
-  "goals), personal goals & visions, 1on1s, feedbacks and settings. Tools are named <domain>-<action> " +
-  "(e.g. worklogs-list, absences-create). Start with list/show tools to discover records; collaborators are " +
-  "referenced by UUID (find them via colleagues-list or collaborators-list) and some admin records by " +
-  "numeric ID. Months use the YYYY-MM format, dates YYYY-MM-DD. Update tools persist every field as given — " +
-  "read the current record first. The signed-in user's own identity is available via `me`.";
+  "goals, notes), personal goals & visions with AI validation (validate-*), 1on1s, feedbacks, manager " +
+  "notes (collaborator-notes), substitute groups, positions and settings. Most tools are named " +
+  "<domain>-<action> (e.g. worklogs-list, absences-create); the standalone ones are me, whoami, " +
+  "permissions, cost-categories, enums and merch-request. Start with list/show tools to discover records; " +
+  "collaborators are referenced by UUID (find them via colleagues-list or collaborators-list) and some " +
+  "admin records by numeric ID. Months use the YYYY-MM format, dates YYYY-MM-DD. Update tools persist " +
+  "every field as given — read the current record first. The signed-in user's own identity is available " +
+  "via `me`.";
 
 function toolTitle(name: string): string {
   const spaced = name.replaceAll("-", " ");

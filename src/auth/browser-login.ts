@@ -42,7 +42,7 @@ export function buildLoginPage(): string {
 
 export async function performBrowserLogin(
   launchBrowser: (url: string) => void = (url) =>
-    void open(url).catch(() => consola.warn(`Couldn't open a browser. Open this URL manually:\n${url}`)),
+    void open(url).catch(() => consola.warn(`Could not open a browser. Open this URL manually:\n${url}`)),
 ): Promise<BrowserLoginResult> {
   const {
     promise: resultPromise,
@@ -57,10 +57,8 @@ export async function performBrowserLogin(
         throw new HTTPError({ status: 415 });
       }
 
-      const payload = await readValidatedBody(event, callbackPayloadSchema).catch((error: unknown) => {
-        rejectResult(new Error("Incomplete response from the browser."));
-        throw error;
-      });
+      // A malformed request (another local process, a stray probe) must not kill the pending sign-in.
+      const payload = await readValidatedBody(event, callbackPayloadSchema);
 
       if ("error" in payload) {
         rejectResult(new Error(payload.error));

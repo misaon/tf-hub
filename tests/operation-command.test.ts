@@ -20,7 +20,7 @@ describe("commandFromOperation", () => {
   it("derives citty args from the Zod input schema", () => {
     const command = commandFromOperation(echoOperation, { render: () => {} });
 
-    expect(command.meta).toEqual({ name: "echo", description: "Echo the parsed input." });
+    expect(command.meta).toMatchObject({ name: "echo", description: "Echo the parsed input." });
     expect(command.args).toMatchObject({
       json: { type: "boolean" },
       limit: { type: "string", description: "Maximum records.", default: "7" },

@@ -2,6 +2,7 @@ import packageJson from "../../package.json" with { type: "json" };
 import { readStoredCredentials } from "../auth/store.ts";
 import { defineCommand } from "../cli/command.ts";
 import { splitCommaList } from "../domains/fields.ts";
+import { selectOperations } from "../domains/index.ts";
 import { mcpConsola, startMcpServer } from "../mcp/server.ts";
 
 export const mcpServerCommand = defineCommand({
@@ -30,12 +31,15 @@ export const mcpServerCommand = defineCommand({
     const toolsets =
       typeof args.toolsets === "string" && args.toolsets.length > 0 ? splitCommaList(args.toolsets) : undefined;
 
+    const filter = { toolsets, readOnly: args.readOnly === true };
+    selectOperations(filter);
+
     mcpConsola.info(`tf-hub v${packageJson.version} MCP server listening on stdio.`);
 
     if (process.stdin.isTTY) {
       mcpConsola.info("Waiting for an MCP client to connect… press Ctrl-C to stop.");
     }
 
-    await startMcpServer({ toolsets, readOnly: args.readOnly === true });
+    await startMcpServer(filter);
   },
 });

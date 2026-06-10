@@ -85,10 +85,8 @@ export const colleaguesDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "show",
-      description:
-        "Show the public profile of a single colleague (bio, position, department, email, game level). " +
-        "Find the UUID with `colleagues-list`.",
-      input: z.object({ uuid: uuidField("UUID of the colleague.") }),
+      description: "Show the public profile of a single colleague: bio, position, department, email and game level.",
+      input: z.object({ uuid: uuidField("UUID of the colleague (see `colleagues-list`).") }),
       positionals: ["uuid"],
       run: (input) => getPublicCollaborator(input),
       render: detailsRenderer<Collaborator>([
@@ -175,7 +173,7 @@ export const collaboratorsDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "update-bio",
-      description: "Update the bio (about) text shown on a colleague's public profile. Editable by self or managers.",
+      description: "Update the bio (about) text shown on a colleague's public profile (self or managers).",
       input: z.object({
         uuid: uuidField("UUID of the collaborator whose bio to update."),
         bioText: z.string().describe("New bio text."),

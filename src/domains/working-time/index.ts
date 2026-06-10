@@ -83,7 +83,7 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
       description:
         "Show the working time record for one month with all daily work blocks (start/end times, vacation, illness).",
       input: z.object({
-        month: monthField("Month as YYYY-MM."),
+        month: monthField(),
         collaboratorUuid: uuidField("Record owner; defaults to the signed-in user.").optional(),
       }),
       positionals: ["month"],
@@ -94,7 +94,7 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
       action: "summary",
       description:
         "Summarize working time records per collaborator and month: worked, vacation, illness, unpaid and " +
-        "holiday minutes plus the approval state (HR administration view).",
+        "holiday minutes plus the approval state (HR administration).",
       input: z.object({
         collaboratorUuid: uuidField("Only the collaborator with this UUID.").optional(),
         month: z.coerce.number().int().min(1).max(12).describe("Calendar month number (1-12).").optional(),
@@ -177,7 +177,7 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "regenerate",
       description: "Regenerate the working time records for a month from source data (HR administration).",
-      input: z.object({ month: monthField("Month as YYYY-MM.") }),
+      input: z.object({ month: monthField() }),
       positionals: ["month"],
       async run(input) {
         await regenerateWorkingTimeRecords(input);

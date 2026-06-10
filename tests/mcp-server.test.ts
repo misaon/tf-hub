@@ -3,10 +3,9 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { z } from "zod";
 
-import { writeStoredCredentials } from "../src/auth/store.ts";
 import { createMcpServer, mcpConsola } from "../src/mcp/server.ts";
 import { operations, selectOperations } from "../src/domains/index.ts";
-import { jsonResponse, mockFetch } from "./support.ts";
+import { jsonResponse, mockFetch, seedValidSession } from "./support.ts";
 
 const textContentSchema = z.array(z.object({ type: z.literal("text"), text: z.string() }));
 
@@ -39,7 +38,7 @@ describe("mcp server", () => {
     expect(colleagues?.inputSchema["properties"]).toHaveProperty("limit");
   });
 
-  it("registers every operation under a unique name", () => {
+  it("derives a unique tool name for every operation", () => {
     const names = operations.map((operation) => operation.name);
 
     expect(new Set(names).size).toBe(names.length);
@@ -75,12 +74,7 @@ describe("mcp server", () => {
   });
 
   it("runs an operation and returns its data as JSON text", async () => {
-    await writeStoredCredentials({
-      apiKey: "k",
-      refreshToken: "r",
-      idToken: "valid-token",
-      idTokenExpiresAtMs: Date.now() + 3_600_000,
-    });
+    await seedValidSession();
 
     const collaborator = {
       uuid: "u1",
@@ -101,12 +95,7 @@ describe("mcp server", () => {
   });
 
   it("accepts already-transformed arguments for tools with transform fields", async () => {
-    await writeStoredCredentials({
-      apiKey: "k",
-      refreshToken: "r",
-      idToken: "valid-token",
-      idTokenExpiresAtMs: Date.now() + 3_600_000,
-    });
+    await seedValidSession();
 
     let requestBody: unknown = null;
     mockFetch((_input, init) => {

@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 
-import { writeStoredCredentials } from "../src/auth/store.ts";
 import { getCurrentCollaborator, resolveCollaboratorScope } from "../src/domains/collaborators/api.ts";
 import { absencesDomain } from "../src/domains/absences/index.ts";
 import { documentsDomain } from "../src/domains/documents/index.ts";
@@ -8,16 +7,7 @@ import { goalsDomain } from "../src/domains/goals/index.ts";
 import { meEntry } from "../src/domains/profile/index.ts";
 import type { Operation } from "../src/domains/operation.ts";
 import { worklogsDomain } from "../src/domains/worklogs/index.ts";
-import { jsonResponse, mockFetch } from "./support.ts";
-
-function seedValidSession(): Promise<void> {
-  return writeStoredCredentials({
-    apiKey: "k",
-    refreshToken: "r",
-    idToken: "ID",
-    idTokenExpiresAtMs: Date.now() + 3_600_000,
-  });
-}
+import { jsonResponse, mockFetch, seedValidSession } from "./support.ts";
 
 function operationByName(operations: readonly Operation[], name: string): Operation {
   const operation = operations.find((candidate) => candidate.name === name);

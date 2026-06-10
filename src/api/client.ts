@@ -61,7 +61,7 @@ function adviceFor(status: number | undefined): string {
   }
 
   if (status === 403) {
-    return " Your account is missing the Hub permission this operation requires — ask a Hub administrator.";
+    return " Your account is missing the TF Hub permission this operation requires — ask a TF Hub administrator.";
   }
 
   return "";
@@ -83,10 +83,11 @@ export async function callApiEnvelope(path: string, options: CallApiOptions = {}
       throw error;
     }
 
-    throw new Error(
-      `Request to ${path} failed (HTTP ${error.status ?? "?"}).${describeServerError(error)}${adviceFor(error.status)}`,
-      { cause: error },
-    );
+    const reason = error.status === undefined ? "network error or timeout" : `HTTP ${error.status}`;
+
+    throw new Error(`Request to ${path} failed (${reason}).${describeServerError(error)}${adviceFor(error.status)}`, {
+      cause: error,
+    });
   }
 }
 

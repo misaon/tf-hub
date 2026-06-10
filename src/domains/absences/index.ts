@@ -71,7 +71,7 @@ export const absencesDomain: RegistryEntry = defineDomain({
           .pipe(z.array(z.enum(officeAbsenceStates)))
           .optional(),
         collaboratorUuid: uuidField("Only absences of the collaborator with this UUID.").optional(),
-        approverUuid: uuidField("Only absences approved by the collaborator with this UUID.").optional(),
+        approverUuid: uuidField("Only absences assigned to the approver with this UUID.").optional(),
         dateFrom: dateField("Only absences starting on or after this date (YYYY-MM-DD).").optional(),
         dateTo: dateField("Only absences ending on or before this date (YYYY-MM-DD).").optional(),
       }),
@@ -138,7 +138,7 @@ export const absencesDomain: RegistryEntry = defineDomain({
       action: "update",
       description:
         "Change the state of an absence request: approve (APPROVED), reject (REJECTED), request cancellation " +
-        "(AWAITING_CANCELLATION_APPROVAL) or cancel (CANCELED). Approving and rejecting requires being the approver.",
+        "(AWAITING_CANCELLATION_APPROVAL) or cancel (CANCELED). Approving and rejecting require being the approver.",
       input: z.object({
         id: idField("Numeric ID of the absence (see `absences-list`)."),
         state: z.enum(officeAbsenceStates).describe("New state of the absence."),

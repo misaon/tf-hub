@@ -2,19 +2,17 @@ import { describe, expect, it, spyOn } from "bun:test";
 
 import { callApi } from "../src/api/client.ts";
 import { apiBaseUrl, idTokenHeaderName, webApplicationOrigin } from "../src/config.ts";
-import { writeStoredCredentials } from "../src/auth/store.ts";
-import { jsonResponse } from "./support.ts";
 
-function seedValidSession(): Promise<void> {
-  return writeStoredCredentials({
-    apiKey: "k",
-    refreshToken: "r",
-    idToken: "ID_TOKEN",
-    idTokenExpiresAtMs: Date.now() + 3_600_000,
-  });
-}
+import { jsonResponse, seedValidSession } from "./support.ts";
 
 describe("callApi", () => {
+  it("passes an envelope-less response through unchanged", async () => {
+    await seedValidSession();
+    spyOn(globalThis, "fetch").mockResolvedValue(jsonResponse({ status: "deleted" }));
+
+    expect(await callApi("/tf/hub/v3/tf/substitute-groups/1", { method: "DELETE" })).toEqual({ status: "deleted" });
+  });
+
   it("authenticates with the configured identity header and returns the unwrapped data", async () => {
     await seedValidSession();
 
@@ -27,7 +25,7 @@ describe("callApi", () => {
     expect(String(requestUrl)).toBe(`${apiBaseUrl}/tf/hub/v2/ping`);
 
     const headers = new Headers(requestInit?.headers);
-    expect(headers.get(idTokenHeaderName)).toBe("ID_TOKEN");
+    expect(headers.get(idTokenHeaderName)).toBe("ID");
     expect(headers.get("origin")).toBe(webApplicationOrigin);
   });
 
@@ -47,7 +45,7 @@ describe("callApi", () => {
     const failure = await callApi("/x").catch((error: Error) => error.message);
 
     expect(failure).toContain("failed (HTTP 403). Insufficient permissions.");
-    expect(failure).toContain("missing the Hub permission");
+    expect(failure).toContain("missing the TF Hub permission");
     expect(failure).not.toContain("tf-hub login");
   });
 

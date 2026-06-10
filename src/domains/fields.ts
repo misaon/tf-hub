@@ -20,11 +20,11 @@ export const offsetField = z.coerce
   .default(0)
   .describe("Number of records to skip (for pagination).");
 
-export function idField(description: string): z.ZodCoercedNumber<unknown> {
+export function idField(description: string) {
   return z.coerce.number().int().positive().describe(description);
 }
 
-export function uuidField(description: string): z.ZodUUID {
+export function uuidField(description: string) {
   return z.uuid({ error: "Invalid UUID." }).describe(description);
 }
 
@@ -34,11 +34,7 @@ export function monthField(description = "Month as YYYY-MM, e.g. 2026-05.") {
   return z
     .string()
     .regex(monthPattern, "Invalid month. Use the format YYYY-MM, e.g. 2026-05.")
-    .transform((value) => {
-      const [year, month] = value.split("-");
-
-      return `${year}-${month!.padStart(2, "0")}`;
-    })
+    .transform((value) => value.replace(/-(?=\d$)/u, "-0"))
     .describe(description);
 }
 
