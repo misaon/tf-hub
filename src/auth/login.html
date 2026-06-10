@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>tf-hub login</title>
+    <!-- UMD builds on purpose: single-file bundles are the only way to pin them with SRI hashes. -->
+    __CDN_SCRIPTS__
+    <style type="text/tailwindcss">
+      @keyframes drift {
+        0%,
+        100% {
+          transform: translate(-15%, -10%) scale(1);
+        }
+        50% {
+          transform: translate(10%, 15%) scale(1.15);
+        }
+      }
+      @keyframes fade-up {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+      }
+      @keyframes pop {
+        0% {
+          transform: scale(0.5);
+          opacity: 0;
+        }
+        80% {
+          transform: scale(1.08);
+        }
+      }
+    </style>
+  </head>
+  <body class="grid min-h-screen place-items-center overflow-hidden bg-slate-900 font-sans text-slate-200">
+    <div
+      aria-hidden="true"
+      class="fixed top-1/4 left-1/3 -z-10 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl motion-safe:animate-[drift_18s_ease-in-out_infinite]"
+    ></div>
+    <div
+      aria-hidden="true"
+      class="fixed right-1/4 bottom-1/4 -z-10 h-72 w-72 rounded-full bg-indigo-500/10 blur-3xl motion-safe:animate-[drift_24s_ease-in-out_infinite_reverse]"
+    ></div>
+    <div id="root"></div>
+
+    <script type="module">
+      import { initializeApp } from "__FIREBASE_SDK_URL__/firebase-app.js";
+      import { getAuth, GoogleAuthProvider, signInWithPopup } from "__FIREBASE_SDK_URL__/firebase-auth.js";
+
+      const { h, render } = globalThis.preact;
+      const { useState, useCallback } = globalThis.preactHooks;
+      const html = globalThis.htm.bind(h);
+
+      const { tenantId, ...firebaseConfig } = __FIREBASE_CONFIG__;
+      const auth = getAuth(initializeApp(firebaseConfig));
+
+      auth.tenantId = tenantId;
+
+      const reportToCli = (payload) =>
+        fetch("/callback", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+
+      function LoginApp() {
+        const [state, setState] = useState({
+          status: "idle",
+          message: "Sign in with your Google account to continue.",
+        });
+
+        const signIn = useCallback(async () => {
+          setState({ status: "signing", message: "Waiting for Google sign-in…" });
+
+          try {
+            const { user } = await signInWithPopup(auth, new GoogleAuthProvider());
+            await reportToCli({
+              idToken: await user.getIdToken(),
+              refreshToken: user.refreshToken,
+            });
+
+            setState({ status: "done", message: user.displayName ?? user.email ?? "" });
+          } catch (error) {
+            const message = error?.message ?? String(error);
+
+            await reportToCli({ error: message });
+
+            setState({ status: "error", message: `Sign-in failed: ${message}` });
+          }
+        }, []);
+
+        if (state.status === "done") {
+          return html`
+            <main class="max-w-sm p-8 text-center motion-safe:animate-[fade-up_0.4s_ease-out]">
+              <div
+                class="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-green-600 text-4xl text-white motion-safe:animate-[pop_0.35s_ease-out]"
+              >
+                ✓
+              </div>
+              <h1 class="text-2xl font-semibold">Signed in</h1>
+              <p class="mt-2 text-slate-400">
+                ${state.message ? `${state.message} — ` : ""}you can close this window and return to the terminal.
+              </p>
+            </main>
+          `;
+        }
+
+        return html`
+          <main class="max-w-sm p-8 text-center motion-safe:animate-[fade-up_0.4s_ease-out]">
+            <h1 class="text-2xl font-semibold">tf-hub</h1>
+            <p class="mt-2 leading-relaxed ${state.status === "error" ? "text-red-400" : "text-slate-400"}">
+              ${state.message}
+            </p>
+            <button
+              type="button"
+              disabled=${state.status === "signing"}
+              onClick=${signIn}
+              class="mt-6 inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-base text-white transition hover:-translate-y-px hover:bg-blue-500 active:scale-[.97] disabled:cursor-default disabled:opacity-60"
+            >
+              ${state.status === "signing"
+                ? html`<span class="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white"></span>
+                    Waiting for Google…`
+                : "Sign in with Google"}
+            </button>
+          </main>
+        `;
+      }
+
+      render(html`<${LoginApp} />`, document.getElementById("root"));
+    </script>
+  </body>
+</html>
