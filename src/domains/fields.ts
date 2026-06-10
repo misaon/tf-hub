@@ -63,30 +63,23 @@ export function explicitBooleanField(description: string) {
     .describe(description);
 }
 
+export function splitCommaList(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+}
+
 export function commaSeparatedNumbersField(description: string) {
   return z
     .string()
-    .transform((value) =>
-      value
-        .split(",")
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0)
-        .map(Number),
-    )
+    .transform((value) => splitCommaList(value).map(Number))
     .pipe(z.array(z.number().int(), { error: "Expected a comma-separated list of numeric IDs." }))
     .describe(description);
 }
 
 export function commaSeparatedStringsField(description: string) {
-  return z
-    .string()
-    .transform((value) =>
-      value
-        .split(",")
-        .map((item) => item.trim())
-        .filter((item) => item.length > 0),
-    )
-    .describe(description);
+  return z.string().transform(splitCommaList).describe(description);
 }
 
 export function jsonField<Schema extends z.ZodType>(schema: Schema, description: string) {

@@ -9,7 +9,7 @@ import {
   tableRenderer,
   type ColumnSpec,
 } from "../../cli/output.ts";
-import { getCurrentCollaboratorUuid } from "../collaborators/api.ts";
+import { resolveCollaboratorScope } from "../collaborators/api.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
 import { dateTimeField, limitField, monthField, offsetField, uuidField } from "../fields.ts";
 import { createDocument, deleteDocument, documentStates, listDocuments, updateDocument, type Document } from "./api.ts";
@@ -41,13 +41,10 @@ export const documentsDomain: RegistryEntry = defineDomain({
         month: monthField("Only documents sent in this month (YYYY-MM).").optional(),
       }),
       async run({ mine, userUuid, ...rest }) {
-        let resolvedUserUuid = userUuid;
-
-        if (resolvedUserUuid === undefined && mine) {
-          resolvedUserUuid = await getCurrentCollaboratorUuid();
-        }
-
-        return listDocuments({ ...rest, userUuid: resolvedUserUuid });
+        return listDocuments({
+          ...rest,
+          userUuid: await resolveCollaboratorScope({ mine, collaboratorUuid: userUuid }),
+        });
       },
       render: tableRenderer(documentColumns),
     }),

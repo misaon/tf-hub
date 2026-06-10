@@ -6,7 +6,6 @@ import { v3 } from "../../api/paths.ts";
 import type { Paging } from "../shared.ts";
 
 const documentsPath = v3("documents");
-const documentPath = (uuid: string): string => v3(`documents/${uuid}`);
 
 export const documentStates = ["SIGNED", "REJECTED", "WAITING_FOR_SIGN", "CANCELED"] as const;
 
@@ -38,9 +37,9 @@ export async function updateDocument(options: {
 }): Promise<Document> {
   const { uuid, ...body } = options;
 
-  return zDocumentDto.parse(await callApi(documentPath(uuid), { method: "PUT", body }));
+  return zDocumentDto.parse(await callApi(`${documentsPath}/${uuid}`, { method: "PUT", body }));
 }
 
 export async function deleteDocument(options: { uuid: string }): Promise<void> {
-  await callApi(documentPath(options.uuid), { method: "DELETE" });
+  await callApi(`${documentsPath}/${options.uuid}`, { method: "DELETE" });
 }

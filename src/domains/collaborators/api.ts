@@ -6,7 +6,6 @@ import { v3 } from "../../api/paths.ts";
 import type { Paging } from "../shared.ts";
 
 const collaboratorsPath = v3("collaborators");
-const collaboratorPath = (uuid: string): string => v3(`collaborators/${uuid}`);
 
 export type Collaborator = z.infer<typeof zCollaboratorsDto>;
 
@@ -14,7 +13,7 @@ const collaboratorListSchema = z.array(zCollaboratorsDto);
 const collaboratorLabelListSchema = z.array(zCollaboratorLabelDto);
 
 export async function getCurrentCollaborator(): Promise<Collaborator> {
-  return zCollaboratorsDto.parse(await callApi(v3("collaborators/me")));
+  return zCollaboratorsDto.parse(await callApi(`${collaboratorsPath}/me`));
 }
 
 export async function getCurrentCollaboratorUuid(): Promise<string> {
@@ -27,12 +26,36 @@ export async function getCurrentCollaboratorUuid(): Promise<string> {
   return me.uuid;
 }
 
+export async function resolveCollaboratorScope(options: {
+  mine: boolean;
+  collaboratorUuid: string | undefined;
+}): Promise<string | undefined> {
+  const { mine, collaboratorUuid } = options;
+
+  if (collaboratorUuid !== undefined) {
+    return collaboratorUuid;
+  }
+
+  if (!mine) {
+    return;
+  }
+
+  return await getCurrentCollaboratorUuid();
+}
+
+export function omitBio(collaborator: Collaborator): Omit<Collaborator, "bioText"> {
+  const { bioText, ...rest } = collaborator;
+  void bioText;
+
+  return rest;
+}
+
 export async function listPublicCollaborators({ limit, offset }: Paging): Promise<Collaborator[]> {
-  return collaboratorListSchema.parse(await callApi(v3("collaborators/public"), { query: { limit, offset } }));
+  return collaboratorListSchema.parse(await callApi(`${collaboratorsPath}/public`, { query: { limit, offset } }));
 }
 
 export async function getPublicCollaborator({ uuid }: { uuid: string }): Promise<Collaborator> {
-  return zCollaboratorsDto.parse(await callApi(v3(`collaborators/${uuid}/public`)));
+  return zCollaboratorsDto.parse(await callApi(`${collaboratorsPath}/${uuid}/public`));
 }
 
 export async function listCollaborators(
@@ -50,7 +73,7 @@ export async function listCollaborators(
 }
 
 export async function listCollaboratorLabels(): Promise<{ name?: string | null | undefined }[]> {
-  return collaboratorLabelListSchema.parse(await callApi(v3("collaborators/labels")));
+  return collaboratorLabelListSchema.parse(await callApi(`${collaboratorsPath}/labels`));
 }
 
 export async function updateCollaborator(options: {
@@ -63,25 +86,25 @@ export async function updateCollaborator(options: {
 }): Promise<Collaborator> {
   const { uuid, ...body } = options;
 
-  return zCollaboratorsDto.parse(await callApi(collaboratorPath(uuid), { method: "PUT", body }));
+  return zCollaboratorsDto.parse(await callApi(`${collaboratorsPath}/${uuid}`, { method: "PUT", body }));
 }
 
 export async function updateCollaboratorBio(options: { uuid: string; bioText: string }): Promise<Collaborator> {
   const { uuid, ...body } = options;
 
-  return zCollaboratorsDto.parse(await callApi(v3(`collaborators/${uuid}/bio`), { method: "PUT", body }));
+  return zCollaboratorsDto.parse(await callApi(`${collaboratorsPath}/${uuid}/bio`, { method: "PUT", body }));
 }
 
 export async function updateCollaboratorLanguage(options: { uuid: string; language: string }): Promise<Collaborator> {
   const { uuid, ...body } = options;
 
   return zCollaboratorsDto.parse(
-    await callApi(v3(`collaborators/${uuid}/collaboratorSettings`), { method: "PUT", body }),
+    await callApi(`${collaboratorsPath}/${uuid}/collaboratorSettings`, { method: "PUT", body }),
   );
 }
 
 export async function confirmSecurityPolicy(options: { uuid: string }): Promise<Collaborator> {
   return zCollaboratorsDto.parse(
-    await callApi(v3(`collaborators/${options.uuid}/confirmSecurityTF`), { method: "PUT" }),
+    await callApi(`${collaboratorsPath}/${options.uuid}/confirmSecurityTF`, { method: "PUT" }),
   );
 }

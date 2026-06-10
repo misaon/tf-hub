@@ -18,7 +18,6 @@ export interface DomainAction<Shape extends z.ZodRawShape = z.ZodRawShape, TOutp
 const readVerbs = new Set([
   "list",
   "show",
-  "mine",
   "donors",
   "donated",
   "statistics",

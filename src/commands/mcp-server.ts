@@ -1,6 +1,7 @@
 import packageJson from "../../package.json" with { type: "json" };
 import { readStoredCredentials } from "../auth/store.ts";
 import { defineCommand } from "../cli/command.ts";
+import { splitCommaList } from "../domains/fields.ts";
 import { mcpConsola, startMcpServer } from "../mcp/server.ts";
 
 export const mcpServerCommand = defineCommand({
@@ -27,9 +28,7 @@ export const mcpServerCommand = defineCommand({
     }
 
     const toolsets =
-      typeof args.toolsets === "string" && args.toolsets.length > 0
-        ? args.toolsets.split(",").map((name) => name.trim())
-        : undefined;
+      typeof args.toolsets === "string" && args.toolsets.length > 0 ? splitCommaList(args.toolsets) : undefined;
 
     mcpConsola.info(`tf-hub v${packageJson.version} MCP server listening on stdio.`);
 

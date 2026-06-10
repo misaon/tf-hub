@@ -4,7 +4,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { createConsola } from "consola";
 
 import packageJson from "../../package.json" with { type: "json" };
-import { selectOperations, type OperationFilter } from "../domains";
+import { selectOperations, type OperationFilter } from "../domains/index.ts";
 
 export const mcpConsola = createConsola({ stdout: process.stderr, stderr: process.stderr });
 

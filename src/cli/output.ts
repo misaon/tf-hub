@@ -2,7 +2,7 @@ import type { ArgDef } from "citty";
 import { consola } from "consola";
 import { colors } from "consola/utils";
 
-import { renderTable } from "../utils/table.ts";
+import { renderTable } from "./table.ts";
 
 export const jsonArg = {
   type: "boolean",

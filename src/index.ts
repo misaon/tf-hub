@@ -7,7 +7,7 @@ import { loginCommand } from "./commands/login.ts";
 import { logoutCommand } from "./commands/logout.ts";
 import { mcpServerCommand } from "./commands/mcp-server.ts";
 import { updateCommand } from "./commands/update.ts";
-import { registryCommands } from "./domains";
+import { registryCommands } from "./domains/index.ts";
 
 const main = defineCommand({
   meta: {

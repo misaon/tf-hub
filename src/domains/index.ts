@@ -1,25 +1,25 @@
 import type { ArgsDef, CommandDef } from "citty";
 
-import { absencesDomain } from "./absences";
-import { collaboratorNotesDomain } from "./collaborator-notes";
-import { collaboratorsDomain, colleaguesDomain } from "./collaborators";
-import { documentsDomain } from "./documents";
+import { absencesDomain } from "./absences/index.ts";
+import { collaboratorNotesDomain } from "./collaborator-notes/index.ts";
+import { collaboratorsDomain, colleaguesDomain } from "./collaborators/index.ts";
+import { documentsDomain } from "./documents/index.ts";
 import type { RegistryEntry } from "./domain.ts";
-import { feedbacksDomain } from "./feedbacks";
-import { gameDomain } from "./game";
-import { goalsDomain, visionDomain } from "./goals";
-import { oneOnOnesDomain } from "./one-on-ones";
+import { feedbacksDomain } from "./feedbacks/index.ts";
+import { gameDomain } from "./game/index.ts";
+import { goalsDomain, visionDomain } from "./goals/index.ts";
+import { oneOnOnesDomain } from "./one-on-ones/index.ts";
 import type { Operation } from "./operation.ts";
-import { positionsDomain } from "./positions";
-import { meEntry, whoamiEntry } from "./profile";
-import { projectsDomain, sonarDomain } from "./projects";
-import { costCategoriesEntry, enumsEntry, permissionsEntry } from "./reference";
-import { merchRequestEntry, settingsDomain } from "./settings";
-import { sitdownNotesDomain, sitdownRatingsDomain, sitdownsDomain, sitdownTimesDomain } from "./sitdowns";
-import { substituteGroupsDomain } from "./substitute-groups";
-import { validateDomain } from "./validate";
-import { workingTimeDomain } from "./working-time";
-import { worklogsDomain } from "./worklogs";
+import { positionsDomain } from "./positions/index.ts";
+import { meEntry, whoamiEntry } from "./profile/index.ts";
+import { projectsDomain, sonarDomain } from "./projects/index.ts";
+import { costCategoriesEntry, enumsEntry, permissionsEntry } from "./reference/index.ts";
+import { merchRequestEntry, settingsDomain } from "./settings/index.ts";
+import { sitdownNotesDomain, sitdownRatingsDomain, sitdownsDomain, sitdownTimesDomain } from "./sitdowns/index.ts";
+import { substituteGroupsDomain } from "./substitute-groups/index.ts";
+import { validateDomain } from "./validate/index.ts";
+import { workingTimeDomain } from "./working-time/index.ts";
+import { worklogsDomain } from "./worklogs/index.ts";
 
 const registry: readonly RegistryEntry[] = [
   whoamiEntry,

@@ -11,7 +11,7 @@ import {
   tableRenderer,
   type ColumnSpec,
 } from "../../cli/output.ts";
-import { getCurrentCollaborator, getCurrentCollaboratorUuid } from "../collaborators/api.ts";
+import { getCurrentCollaborator, resolveCollaboratorScope } from "../collaborators/api.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
 import { commaSeparatedStringsField, dateField, idField, limitField, offsetField, uuidField } from "../fields.ts";
 import {
@@ -76,13 +76,10 @@ export const absencesDomain: RegistryEntry = defineDomain({
         dateTo: dateField("Only absences ending on or before this date (YYYY-MM-DD).").optional(),
       }),
       async run({ mine, collaboratorUuid, ...rest }) {
-        let resolvedCollaboratorUuid = collaboratorUuid;
-
-        if (resolvedCollaboratorUuid === undefined && mine) {
-          resolvedCollaboratorUuid = await getCurrentCollaboratorUuid();
-        }
-
-        return listOfficeAbsences({ ...rest, collaboratorUuid: resolvedCollaboratorUuid });
+        return listOfficeAbsences({
+          ...rest,
+          collaboratorUuid: await resolveCollaboratorScope({ mine, collaboratorUuid }),
+        });
       },
       render(absences) {
         tableRenderer(absenceColumns)(absences);

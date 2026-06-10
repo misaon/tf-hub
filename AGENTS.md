@@ -26,8 +26,10 @@ plus typos, zizmor (workflow audit), Codecov and the bundle-size check.
 
 One folder per feature domain; everything wires up exactly once.
 
-- `domains/<domain>/` — `api.ts` holds endpoint paths (`api/paths.ts` helpers) and typed calls that parse
-  responses with the **generated** Zod schemas; `index.ts` holds `defineDomain({ name, description, actions })`.
+- `domains/<domain>/` — `api.ts` holds endpoint paths (`api/paths.ts` helpers), typed calls that parse
+  responses with the **generated** Zod schemas, and response-shaping helpers (e.g. `omitBio`); small
+  single-resource domains may inline their calls in `index.ts` instead. `index.ts` holds
+  `defineDomain({ name, description, actions })`.
   Each `defineAction` pairs a Zod input schema (the single source of CLI help and MCP tool docs via
   `.describe()`/`.default()`) with `run` and `render`. From that one definition the registry derives the MCP
   tool `<domain>-<action>` (with verb-derived annotations) and the CLI command `tf-hub <domain> <action>`.

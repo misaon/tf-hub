@@ -10,7 +10,7 @@ import {
   tableRenderer,
   type ColumnSpec,
 } from "../../cli/output.ts";
-import { getCurrentCollaboratorUuid } from "../collaborators/api.ts";
+import { getCurrentCollaboratorUuid, resolveCollaboratorScope } from "../collaborators/api.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
 import {
   allTimeFromDate,
@@ -74,13 +74,7 @@ export const goalsDomain: RegistryEntry = defineDomain({
         toDate: dateField("Only goals created on or before this date (YYYY-MM-DD).").default(allTimeToDate),
       }),
       async run({ mine, collaboratorUuid, ...rest }) {
-        let resolvedCollaboratorUuid = collaboratorUuid;
-
-        if (resolvedCollaboratorUuid === undefined && mine) {
-          resolvedCollaboratorUuid = await getCurrentCollaboratorUuid();
-        }
-
-        return listGoals({ ...rest, collaboratorUuid: resolvedCollaboratorUuid });
+        return listGoals({ ...rest, collaboratorUuid: await resolveCollaboratorScope({ mine, collaboratorUuid }) });
       },
       render: tableRenderer<Goal>([
         ...goalIdentityColumns,
@@ -159,13 +153,7 @@ export const visionDomain: RegistryEntry = defineDomain({
         collaboratorUuid: uuidField("UUID of the collaborator; defaults to the signed-in user.").optional(),
       }),
       async run({ collaboratorUuid }) {
-        let resolvedUuid = collaboratorUuid;
-
-        if (resolvedUuid === undefined) {
-          resolvedUuid = await getCurrentCollaboratorUuid();
-        }
-
-        return getVision({ collaboratorUuid: resolvedUuid });
+        return getVision({ collaboratorUuid: collaboratorUuid ?? (await getCurrentCollaboratorUuid()) });
       },
       render: visionDetails,
     }),

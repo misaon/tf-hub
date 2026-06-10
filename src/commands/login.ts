@@ -17,7 +17,7 @@ export const loginCommand = defineCommand({
       const current = decodeJwtClaims(existingSession.idToken);
 
       consola.info(
-        `Already logged in as ${current.name ?? current.email ?? current.user_id}. Run \`tf-hub logout\` to switch accounts.`,
+        `Already logged in as ${current.name ?? current.email ?? current.user_id ?? "an unknown account"}. Run \`tf-hub logout\` to switch accounts.`,
       );
 
       return;
@@ -27,6 +27,6 @@ export const loginCommand = defineCommand({
     await writeStoredCredentials(session);
 
     const claims = decodeJwtClaims(session.idToken);
-    consola.success(`Logged in as ${claims.name ?? claims.email ?? claims.user_id}`);
+    consola.success(`Logged in as ${claims.name ?? claims.email ?? claims.user_id ?? "an unknown account"}.`);
   },
 });
