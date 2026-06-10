@@ -1,13 +1,13 @@
 import { describe, expect, it } from "bun:test";
 
 import { writeStoredCredentials } from "../src/auth/store.ts";
-import { getCurrentCollaborator } from "../src/domains/collaborators/api.ts";
-import { absencesDomain } from "../src/domains/absences";
-import { documentsDomain } from "../src/domains/documents";
-import { goalsDomain } from "../src/domains/goals";
-import { meEntry } from "../src/domains/profile";
+import { getCurrentCollaborator, resolveCollaboratorScope } from "../src/domains/collaborators/api.ts";
+import { absencesDomain } from "../src/domains/absences/index.ts";
+import { documentsDomain } from "../src/domains/documents/index.ts";
+import { goalsDomain } from "../src/domains/goals/index.ts";
+import { meEntry } from "../src/domains/profile/index.ts";
 import type { Operation } from "../src/domains/operation.ts";
-import { worklogsDomain } from "../src/domains/worklogs";
+import { worklogsDomain } from "../src/domains/worklogs/index.ts";
 import { jsonResponse, mockFetch } from "./support.ts";
 
 function seedValidSession(): Promise<void> {
@@ -146,6 +146,22 @@ describe("goals-list operation", () => {
 
     const goalsCall = fetchSpy.mock.calls.find(([requestUrl]) => String(requestUrl).includes("/collaborator-goals"));
     expect(String(goalsCall?.[0])).toContain("/collaborator-goals/collaborator/UUID-1");
+  });
+});
+
+describe("resolveCollaboratorScope", () => {
+  it("prefers an explicit UUID over mine and never calls the API", async () => {
+    const fetchSpy = mockFetch(() => Promise.resolve(jsonResponse({ message: "OK", data: me })));
+
+    await expect(resolveCollaboratorScope({ mine: true, collaboratorUuid: "UUID-9" })).resolves.toBe("UUID-9");
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("resolves to nothing when neither mine nor a UUID is given", async () => {
+    const fetchSpy = mockFetch(() => Promise.resolve(jsonResponse({ message: "OK", data: me })));
+
+    await expect(resolveCollaboratorScope({ mine: false, collaboratorUuid: undefined })).resolves.toBeUndefined();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
 

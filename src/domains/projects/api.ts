@@ -11,7 +11,9 @@ import {
 import { v2, v3 } from "../../api/paths.ts";
 import type { Paging } from "../shared.ts";
 
-const projectReportPath = (uuid: string): string => v2(`projects-report/${uuid}`);
+const projectListPath = v3("projects");
+const projectsPath = v2("projects");
+const projectReportsPath = v2("projects-report");
 const sonarCloudMetricsPath = v3("sonar-cloud-metrics");
 
 export type Project = z.infer<typeof zProjectsDto>;
@@ -25,7 +27,7 @@ const projectListSchema = z.array(zProjectsDto);
 const projectLeaderHistoryListSchema = z.array(zProjectLeadersHistoryDto);
 
 export async function listProjects(options: Paging): Promise<Project[]> {
-  return projectListSchema.parse(await callApi(v3("projects"), { query: options }));
+  return projectListSchema.parse(await callApi(projectListPath, { query: options }));
 }
 
 export async function updateProject(options: {
@@ -38,7 +40,7 @@ export async function updateProject(options: {
 }): Promise<Project> {
   const { id, ...body } = options;
 
-  return zProjectsDto.parse(await callApi(v2(`projects/${id}`), { method: "PUT", body }));
+  return zProjectsDto.parse(await callApi(`${projectsPath}/${id}`, { method: "PUT", body }));
 }
 
 export async function updateProjectLeader(options: {
@@ -49,17 +51,17 @@ export async function updateProjectLeader(options: {
 }): Promise<Project> {
   const { id, ...body } = options;
 
-  return zProjectsDto.parse(await callApi(v2(`projects/${id}/leader`), { method: "PUT", body }));
+  return zProjectsDto.parse(await callApi(`${projectsPath}/${id}/leader`, { method: "PUT", body }));
 }
 
 export async function listProjectLeaderHistory(): Promise<ProjectLeaderHistory[]> {
-  return projectLeaderHistoryListSchema.parse(await callApi(v2("projects/leader-history")));
+  return projectLeaderHistoryListSchema.parse(await callApi(`${projectsPath}/leader-history`));
 }
 
 export async function getProjectReport(options: { uuid: string; date: string }): Promise<ProjectReport> {
   const { uuid, ...query } = options;
 
-  return zProjectReportDto.parse(await callApi(projectReportPath(uuid), { query }));
+  return zProjectReportDto.parse(await callApi(`${projectReportsPath}/${uuid}`, { query }));
 }
 
 export async function updateProjectReport(options: {
@@ -73,7 +75,7 @@ export async function updateProjectReport(options: {
 }): Promise<ProjectReport> {
   const { uuid, ...body } = options;
 
-  return zProjectReportDto.parse(await callApi(projectReportPath(uuid), { method: "PUT", body }));
+  return zProjectReportDto.parse(await callApi(`${projectReportsPath}/${uuid}`, { method: "PUT", body }));
 }
 
 export async function getSonarCloudMetrics(options: Paging & { projectUuid: string }): Promise<SonarCloudMetrics> {

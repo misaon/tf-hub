@@ -25,8 +25,9 @@ import {
   getCurrentCollaboratorUuid,
   listCollaboratorLabels,
   listCollaborators,
-  listPublicCollaborators,
   getPublicCollaborator,
+  listPublicCollaborators,
+  omitBio,
   updateCollaborator,
   updateCollaboratorBio,
   updateCollaboratorLanguage,
@@ -35,10 +36,6 @@ import {
 
 export function positionOf(collaborator: Collaborator): string {
   return collaborator.positionOverride || formatValue(collaborator.positions?.[0]?.name);
-}
-
-export function fullName(collaborator: Collaborator): string {
-  return formatValue(`${collaborator.firstName ?? ""} ${collaborator.lastName ?? ""}`.trim());
 }
 
 function byLastName(collaborators: Collaborator[]): Collaborator[] {
@@ -54,7 +51,7 @@ function sortedTableRenderer(columns: ColumnSpec<Collaborator>[]): (collaborator
 }
 
 const collaboratorDetails = detailsRenderer<Collaborator>([
-  ["Name", fullName],
+  ["Name", formatName],
   ["Email", (collaborator) => formatValue(collaborator.email)],
   ["Position", positionOf],
   ["Approver", (collaborator) => formatName(collaborator.primaryOfficeAbsenceApprover)],
@@ -77,14 +74,10 @@ export const colleaguesDomain: RegistryEntry = defineDomain({
       async run(input) {
         const collaborators = await listPublicCollaborators(input);
 
-        return collaborators.map(({ bioText, ...rest }) => {
-          void bioText;
-
-          return rest;
-        });
+        return collaborators.map((collaborator) => omitBio(collaborator));
       },
       render: sortedTableRenderer([
-        ["Name", fullName],
+        ["Name", formatName],
         ["Position", positionOf],
         ["Department", (collaborator) => formatValue(collaborator.positions?.[0]?.department?.name)],
         ["Email", (collaborator) => formatValue(collaborator.email)],
@@ -99,7 +92,7 @@ export const colleaguesDomain: RegistryEntry = defineDomain({
       positionals: ["uuid"],
       run: (input) => getPublicCollaborator(input),
       render: detailsRenderer<Collaborator>([
-        ["Name", fullName],
+        ["Name", formatName],
         ["Position", positionOf],
         ["Department", (colleague) => formatValue(colleague.positions?.[0]?.department?.name)],
         ["Email", (colleague) => formatValue(colleague.email)],
@@ -142,15 +135,11 @@ export const collaboratorsDomain: RegistryEntry = defineDomain({
       async run(input) {
         const collaborators = await listCollaborators(input);
 
-        return collaborators.map(({ bioText, ...rest }) => {
-          void bioText;
-
-          return rest;
-        });
+        return collaborators.map((collaborator) => omitBio(collaborator));
       },
       render: sortedTableRenderer([
         ["ID", (collaborator) => formatValue(collaborator.id)],
-        ["Name", fullName],
+        ["Name", formatName],
         ["Email", (collaborator) => formatValue(collaborator.email)],
         ["Position", positionOf],
         ["Active", (collaborator) => formatValue(collaborator.isActive)],

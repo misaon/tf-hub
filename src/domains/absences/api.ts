@@ -61,15 +61,15 @@ export async function updateOfficeAbsence(options: {
 }): Promise<OfficeAbsence> {
   const { id, ...body } = options;
 
-  return zOfficeAbsencesDto.parse(await callApi(v3(`office-absences/${id}`), { method: "PUT", body }));
+  return zOfficeAbsencesDto.parse(await callApi(`${absencesPath}/${id}`, { method: "PUT", body }));
 }
 
 export async function getOfficeAbsenceStatistics(options: { fullYear: number }): Promise<OfficeAbsenceStatistics> {
   return zOfficeAbsencesBasicStatisticsDto.parse(
-    await callApi(v3("office-absences/statistics"), { query: { fullYear: options.fullYear } }),
+    await callApi(`${absencesPath}/statistics`, { query: { fullYear: options.fullYear } }),
   );
 }
 
 export async function getBackupAbsenceApprover(): Promise<BackupAbsenceApprover> {
-  return zBackupAbsenceApproverDto.parse(await callApi(v3("office-absences/backup-approver")));
+  return zBackupAbsenceApproverDto.parse(await callApi(`${absencesPath}/backup-approver`));
 }

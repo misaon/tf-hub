@@ -154,7 +154,7 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
       positionals: ["id", "state"],
       run: (input) => updateWorkingTimeRecordItemStatus(input),
       render: detailsRenderer<WorkingTimeRecordItem>([
-        ["ID", (item) => String(item.id)],
+        ["ID", (item) => formatValue(item.id)],
         ["State", (item) => formatValue(item.state)],
         ["Note", (item) => formatValue(item.note)],
       ]),

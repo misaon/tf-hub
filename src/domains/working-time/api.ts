@@ -10,7 +10,7 @@ import { v3 } from "../../api/paths.ts";
 import type { Paging } from "../shared.ts";
 
 const recordsPath = v3("working-time-records");
-const itemPath = (id: number): string => v3(`working-time-record-items/${id}`);
+const recordItemsPath = v3("working-time-record-items");
 
 export const workingTimeRecordStates = [
   "WAITING_FOR_CONFIRMATION",
@@ -48,7 +48,7 @@ export async function getWorkingTimeRecordMonth(options: {
 }): Promise<WorkingTimeRecord> {
   const { month, ...query } = options;
 
-  return zWorkingTimeRecordDto.parse(await callApi(v3(`working-time-records/${month}`), { query }));
+  return zWorkingTimeRecordDto.parse(await callApi(`${recordsPath}/${month}`, { query }));
 }
 
 export async function getWorkingTimeRecordsSummary(options: {
@@ -58,7 +58,7 @@ export async function getWorkingTimeRecordsSummary(options: {
   legalType?: string | undefined;
   state?: string | undefined;
 }): Promise<WorkingTimeRecordSummary[]> {
-  return summaryListSchema.parse(await callApi(v3("working-time-records/summary"), { query: options }));
+  return summaryListSchema.parse(await callApi(`${recordsPath}/summary`, { query: options }));
 }
 
 export interface DateItemInput {
@@ -74,7 +74,7 @@ export async function updateWorkingTimeRecordItem(options: {
 }): Promise<WorkingTimeRecordItem> {
   const { id, ...body } = options;
 
-  return zWorkingTimeRecordItemDto.parse(await callApi(itemPath(id), { method: "PUT", body }));
+  return zWorkingTimeRecordItemDto.parse(await callApi(`${recordItemsPath}/${id}`, { method: "PUT", body }));
 }
 
 export async function updateWorkingTimeRecordItemStatus(options: {
@@ -84,13 +84,13 @@ export async function updateWorkingTimeRecordItemStatus(options: {
 }): Promise<WorkingTimeRecordItem> {
   const { id, ...body } = options;
 
-  return zWorkingTimeRecordItemDto.parse(await callApi(`${itemPath(id)}/status`, { method: "PUT", body }));
+  return zWorkingTimeRecordItemDto.parse(await callApi(`${recordItemsPath}/${id}/status`, { method: "PUT", body }));
 }
 
 export async function deleteWorkingTimeRecord(options: { id: number; legalType: string }): Promise<void> {
-  await callApi(v3(`working-time-records/${options.id}/${options.legalType}`), { method: "DELETE" });
+  await callApi(`${recordsPath}/${options.id}/${options.legalType}`, { method: "DELETE" });
 }
 
 export async function regenerateWorkingTimeRecords(options: { month: string }): Promise<void> {
-  await callApi(v3(`working-time-records/${options.month}/regenerate`), { method: "POST" });
+  await callApi(`${recordsPath}/${options.month}/regenerate`, { method: "POST" });
 }

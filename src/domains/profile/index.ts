@@ -2,11 +2,11 @@ import { z } from "zod";
 
 import { decodeJwtClaims } from "../../auth/jwt.ts";
 import { getValidIdToken } from "../../auth/tokens.ts";
-import { detailsRenderer, formatValue, missingValue } from "../../cli/output.ts";
+import { detailsRenderer, formatName, formatValue, missingValue } from "../../cli/output.ts";
+import { getCurrentCollaborator, omitBio } from "../collaborators/api.ts";
+import { positionOf } from "../collaborators";
 import { standaloneEntry, type RegistryEntry } from "../domain.ts";
 import { defineOperation } from "../operation.ts";
-import { getCurrentCollaborator } from "../collaborators/api.ts";
-import { fullName, positionOf } from "../collaborators/index.ts";
 
 export const whoamiEntry: RegistryEntry = standaloneEntry(
   defineOperation({
@@ -44,15 +44,12 @@ export const meEntry: RegistryEntry = standaloneEntry(
       "The bio is omitted — fetch it with colleagues-show when needed.",
     input: z.object({}),
     async run() {
-      const { bioText, ...identity } = await getCurrentCollaborator();
-      void bioText;
-
-      return identity;
+      return omitBio(await getCurrentCollaborator());
     },
   }),
   {
     render: detailsRenderer([
-      ["Name", fullName],
+      ["Name", formatName],
       ["Email", (me) => formatValue(me.email)],
       ["Position", positionOf],
       ["Department", (me) => formatValue(me.positions?.[0]?.department?.name)],

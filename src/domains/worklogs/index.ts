@@ -13,7 +13,7 @@ import {
   tableRenderer,
   type ColumnSpec,
 } from "../../cli/output.ts";
-import { getCurrentCollaborator, getCurrentCollaboratorUuid } from "../collaborators/api.ts";
+import { getCurrentCollaborator, resolveCollaboratorScope } from "../collaborators/api.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
 import {
   allTimeFromDate,
@@ -48,7 +48,7 @@ const filterInput = z.object({
 });
 
 const worklogColumns = (descriptionLength: number): ColumnSpec<Worklog>[] => [
-  ["ID", (worklog) => String(worklog.id)],
+  ["ID", (worklog) => formatValue(worklog.id)],
   ["Date", (worklog) => formatDate(worklog.started)],
   ["Time", (worklog) => formatMinutes(worklog.timeSpent)],
   ["Category", (worklog) => formatValue(worklog.costCategory?.name)],
@@ -69,13 +69,7 @@ export const worklogsDomain: RegistryEntry = defineDomain({
         "in The Game.",
       input: filterInput,
       async run({ mine, collaboratorUuid, ...rest }) {
-        let resolvedCollaboratorUuid = collaboratorUuid;
-
-        if (resolvedCollaboratorUuid === undefined && mine) {
-          resolvedCollaboratorUuid = await getCurrentCollaboratorUuid();
-        }
-
-        return listWorklogs({ ...rest, collaboratorUuid: resolvedCollaboratorUuid });
+        return listWorklogs({ ...rest, collaboratorUuid: await resolveCollaboratorScope({ mine, collaboratorUuid }) });
       },
       render({ worklogs, timeSpentSum }) {
         tableRenderer(worklogColumns(40))(worklogs);
@@ -153,13 +147,10 @@ export const worklogsDomain: RegistryEntry = defineDomain({
         "in minutes.",
       input: filterInput,
       async run({ mine, collaboratorUuid, ...rest }) {
-        let resolvedCollaboratorUuid = collaboratorUuid;
-
-        if (resolvedCollaboratorUuid === undefined && mine) {
-          resolvedCollaboratorUuid = await getCurrentCollaboratorUuid();
-        }
-
-        return getWorklogCategorySum({ ...rest, collaboratorUuid: resolvedCollaboratorUuid });
+        return getWorklogCategorySum({
+          ...rest,
+          collaboratorUuid: await resolveCollaboratorScope({ mine, collaboratorUuid }),
+        });
       },
       render: tableRenderer<WorklogCategorySum>([
         ["Category", (sum) => formatValue(sum.costCategory?.name)],

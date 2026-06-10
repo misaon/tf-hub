@@ -6,7 +6,6 @@ import { v3 } from "../../api/paths.ts";
 import type { Paging } from "../shared.ts";
 
 const worklogsPath = v3("work-logs");
-const worklogPath = (id: number): string => v3(`work-logs/${id}`);
 
 export type Worklog = z.infer<typeof zWorklogsDto>;
 export type WorklogCategorySum = z.infer<typeof zWorklogsCategorySumDto>;
@@ -36,7 +35,7 @@ export async function listWorklogs(
 }
 
 export async function getWorklog(options: { id: number }): Promise<Worklog> {
-  return zWorklogsDto.parse(await callApi(worklogPath(options.id)));
+  return zWorklogsDto.parse(await callApi(`${worklogsPath}/${options.id}`));
 }
 
 export async function createWorklog(options: {
@@ -60,15 +59,15 @@ export async function updateWorklog(options: {
 }): Promise<Worklog> {
   const { id, ...body } = options;
 
-  return zWorklogsDto.parse(await callApi(worklogPath(id), { method: "PUT", body }));
+  return zWorklogsDto.parse(await callApi(`${worklogsPath}/${id}`, { method: "PUT", body }));
 }
 
 export async function deleteWorklog(options: { id: number }): Promise<void> {
-  await callApi(worklogPath(options.id), { method: "DELETE" });
+  await callApi(`${worklogsPath}/${options.id}`, { method: "DELETE" });
 }
 
 export async function getWorklogCategorySum(options: WorklogFilters): Promise<WorklogCategorySum[]> {
-  return worklogCategorySumListSchema.parse(await callApi(v3("work-logs/category-sum"), { query: options }));
+  return worklogCategorySumListSchema.parse(await callApi(`${worklogsPath}/category-sum`, { query: options }));
 }
 
 export async function getWorklogYearStats(options: {
@@ -77,5 +76,5 @@ export async function getWorklogYearStats(options: {
 }): Promise<WorklogYearStats[]> {
   const { toDate, ...query } = options;
 
-  return worklogYearStatsListSchema.parse(await callApi(v3(`work-logs/year-stats/${toDate}`), { query }));
+  return worklogYearStatsListSchema.parse(await callApi(`${worklogsPath}/year-stats/${toDate}`, { query }));
 }
