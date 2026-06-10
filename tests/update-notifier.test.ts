@@ -1,12 +1,15 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it, spyOn } from "bun:test";
+import { consola } from "consola";
 
 import {
   binaryAssetName,
   binaryDownloadUrl,
+  notifyOnUpdate,
   runsAsStandaloneBinary,
   selectUpdateNotice,
   updateInstallCommand,
 } from "../src/cli/update-notifier.ts";
+import { jsonResponse, mockFetch } from "./support.ts";
 
 describe("selectUpdateNotice", () => {
   it("advertises a strictly newer published version", () => {
@@ -63,5 +66,29 @@ describe("standalone binary mode", () => {
 
   it("links the download to the exact release tag", () => {
     expect(binaryDownloadUrl("1.2.3")).toContain("/releases/download/v1.2.3/tf-hub-");
+  });
+});
+
+describe("notifyOnUpdate", () => {
+  it("notifies about a newer version and reuses the cached answer within the interval", async () => {
+    const originalIsTTY = process.stdout.isTTY;
+    const originalContinuousIntegration = process.env["CI"];
+    process.stdout.isTTY = true;
+    process.env["CI"] = "";
+
+    try {
+      const box = spyOn(consola, "box").mockReturnValue(undefined);
+      const fetchSpy = mockFetch(() => Promise.resolve(jsonResponse({ version: "99.0.0" })));
+
+      await notifyOnUpdate("test-package", "0.1.0");
+      await notifyOnUpdate("test-package", "0.1.0");
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(box).toHaveBeenCalledTimes(2);
+      expect(String(box.mock.calls[0]?.[0])).toContain("99.0.0");
+    } finally {
+      process.stdout.isTTY = originalIsTTY;
+      process.env["CI"] = originalContinuousIntegration;
+    }
   });
 });
