@@ -1,0 +1,11 @@
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # Version tags are pinned enough here; Renovate keeps them current.
+        "*": ref-pin
+  cache-poisoning:
+    ignore:
+      # Low-confidence false positive: setup-node only caches when the `cache:` input is set,
+      # and the publish job deliberately sets none.
+      - release.yml

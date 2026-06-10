@@ -1,0 +1,36 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.3
+        with:
+          persist-credentials: false
+      # No caches in the publish job — restored caches could poison the released artifact.
+      - uses: oven-sh/setup-bun@v2.2.0
+        with:
+          bun-version: latest
+          no-cache: true
+      - uses: actions/setup-node@v6.4.0
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+      - run: bun install --frozen-lockfile
+      - name: Verify the tag matches package.json
+        run: test "v$(jq -r .version package.json)" = "$GITHUB_REF_NAME"
+      - run: bun test
+      - run: bun run build
+      - run: npm publish --provenance --access public
+      - name: Publish the GitHub release from CHANGELOG.md
+        run: bunx changelogen gh release "${GITHUB_REF_NAME#v}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
