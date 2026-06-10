@@ -39,9 +39,16 @@ export const whoamiEntry: RegistryEntry = standaloneEntry(
 export const meEntry: RegistryEntry = standaloneEntry(
   defineOperation({
     name: "me",
-    description: "Show the TF Hub profile of the signed-in user.",
+    description:
+      "Show the signed-in user's Hub identity and profile (uuid, id, email, positions, game state). " +
+      "The bio is omitted — fetch it with colleagues-show when needed.",
     input: z.object({}),
-    run: () => getCurrentCollaborator(),
+    async run() {
+      const { bioText, ...identity } = await getCurrentCollaborator();
+      void bioText;
+
+      return identity;
+    },
   }),
   {
     render: detailsRenderer([

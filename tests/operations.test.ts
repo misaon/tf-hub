@@ -2,7 +2,9 @@ import { describe, expect, it } from "bun:test";
 
 import { writeStoredCredentials } from "../src/auth/store.ts";
 import { getCurrentCollaborator } from "../src/domains/collaborators/api.ts";
+import { absencesDomain } from "../src/domains/absences";
 import { documentsDomain } from "../src/domains/documents";
+import { meEntry } from "../src/domains/profile";
 import type { Operation } from "../src/domains/operation.ts";
 import { worklogsDomain } from "../src/domains/worklogs";
 import { jsonResponse, mockFetch } from "./support.ts";
@@ -103,5 +105,38 @@ describe("worklogs-create operation", () => {
       projectUuid: null,
       collaboratorId: 7,
     });
+  });
+});
+
+describe("absences-list operation", () => {
+  it("scopes to the current collaborator when mine is set", async () => {
+    await seedValidSession();
+
+    const fetchSpy = mockFetch((input) =>
+      Promise.resolve(
+        String(input).includes("/collaborators/me")
+          ? jsonResponse({ message: "OK", data: me })
+          : jsonResponse({ message: "OK", data: [] }),
+      ),
+    );
+
+    const listOperation = operationByName(absencesDomain.operations, "absences-list");
+    await listOperation.run(listOperation.input.parse({ mine: true }));
+
+    const absencesCall = fetchSpy.mock.calls.find(([requestUrl]) => String(requestUrl).includes("/office-absences"));
+    expect(String(absencesCall?.[0])).toContain("collaboratorUuid=UUID-1");
+  });
+});
+
+describe("me operation", () => {
+  it("omits the bio from the identity payload", async () => {
+    await seedValidSession();
+    mockFetch(() => Promise.resolve(jsonResponse({ message: "OK", data: { ...me, bioText: "x".repeat(30_000) } })));
+
+    const meOperation = operationByName(meEntry.operations, "me");
+    const identity = await meOperation.run(meOperation.input.parse({}));
+
+    expect(identity).not.toContainKey("bioText");
+    expect(identity).toMatchObject({ uuid: "UUID-1", id: 7 });
   });
 });

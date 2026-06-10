@@ -1,3 +1,5 @@
+import { consola } from "consola";
+import { colors } from "consola/utils";
 import { z } from "zod";
 
 import {
@@ -9,7 +11,7 @@ import {
   tableRenderer,
   type ColumnSpec,
 } from "../../cli/output.ts";
-import { getCurrentCollaborator } from "../collaborators/api.ts";
+import { getCurrentCollaborator, getCurrentCollaboratorUuid } from "../collaborators/api.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
 import { commaSeparatedStringsField, dateField, idField, limitField, offsetField, uuidField } from "../fields.ts";
 import {
@@ -45,7 +47,8 @@ const absenceDetails = detailsRenderer<OfficeAbsence>([
   ["Description", (absence) => ellipsize(absence.generalDescription)],
 ]);
 
-const percent = (value: number | null | undefined): string => (typeof value === "number" ? ` (${value}%)` : "");
+const percent = (value: number | null | undefined): string =>
+  typeof value === "number" ? ` (${Math.round(value * 10) / 10}% of the annual allowance)` : "";
 
 export const absencesDomain: RegistryEntry = defineDomain({
   name: "absences",
@@ -55,10 +58,11 @@ export const absencesDomain: RegistryEntry = defineDomain({
       action: "list",
       description:
         "List office absences (vacations, home office, business trips, sick leave) with their approval state. " +
-        "Regular users see their own absences; approvers also see requests they approve.",
+        "Approvers also see requests of others — pass mine=true for only your own records.",
       input: z.object({
         limit: limitField,
         offset: offsetField,
+        mine: z.boolean().default(false).describe("Only absences of the signed-in user."),
         type: z.enum(officeAbsenceTypes).describe(absenceTypeDescription).optional(),
         states: commaSeparatedStringsField(
           "Comma-separated absence states to include: WAITING_FOR_APPROVAL, APPROVED, REJECTED, " +
@@ -71,8 +75,21 @@ export const absencesDomain: RegistryEntry = defineDomain({
         dateFrom: dateField("Only absences starting on or after this date (YYYY-MM-DD).").optional(),
         dateTo: dateField("Only absences ending on or before this date (YYYY-MM-DD).").optional(),
       }),
-      run: (input) => listOfficeAbsences(input),
-      render: tableRenderer(absenceColumns),
+      async run({ mine, collaboratorUuid, ...rest }) {
+        let resolvedCollaboratorUuid = collaboratorUuid;
+
+        if (resolvedCollaboratorUuid === undefined && mine) {
+          resolvedCollaboratorUuid = await getCurrentCollaboratorUuid();
+        }
+
+        return listOfficeAbsences({ ...rest, collaboratorUuid: resolvedCollaboratorUuid });
+      },
+      render(absences) {
+        tableRenderer(absenceColumns)(absences);
+
+        const totalHours = absences.reduce((sum, absence) => sum + (absence.hours ?? 0), 0);
+        consola.log(colors.dim(`Total hours of the listed absences: ${totalHours}`));
+      },
     }),
     defineAction({
       action: "create",
@@ -138,20 +155,21 @@ export const absencesDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "statistics",
       description:
-        "Show the signed-in user's absence statistics for a year: vacation, home office, illness and " +
-        "inaccessibility totals with the share of the annual allowance used.",
+        "Show the signed-in user's absence totals for a calendar year, in days (8 hours = 1 day): vacation, " +
+        "home office, illness and inaccessibility, each with the share of the annual allowance. Counts " +
+        "APPROVED and DONE absences for the whole year, so future approved absences are included.",
       input: z.object({
         year: z.coerce.number().int().min(2000).max(2200).describe("Calendar year, e.g. 2026."),
       }),
       positionals: ["year"],
       run: ({ year }) => getOfficeAbsenceStatistics({ fullYear: year }),
       render: detailsRenderer<OfficeAbsenceStatistics>([
-        ["Holiday", (stats) => `${formatValue(stats.totalHoliday)} h${percent(stats.annualHolidayInPercent)}`],
-        ["Home office", (stats) => `${formatValue(stats.totalHO)} h${percent(stats.annualHOInPercent)}`],
-        ["Illness", (stats) => `${formatValue(stats.totalIllness)} h${percent(stats.annualIllnessInPercent)}`],
+        ["Holiday", (stats) => `${formatValue(stats.totalHoliday)} days${percent(stats.annualHolidayInPercent)}`],
+        ["Home office", (stats) => `${formatValue(stats.totalHO)} days${percent(stats.annualHOInPercent)}`],
+        ["Illness", (stats) => `${formatValue(stats.totalIllness)} days${percent(stats.annualIllnessInPercent)}`],
         [
           "Inaccessibility",
-          (stats) => `${formatValue(stats.totalInaccessibility)} h${percent(stats.annualInaccessibilityInPercent)}`,
+          (stats) => `${formatValue(stats.totalInaccessibility)} days${percent(stats.annualInaccessibilityInPercent)}`,
         ],
       ]),
     }),
