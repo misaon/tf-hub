@@ -1,6 +1,12 @@
 import { describe, expect, it } from "bun:test";
 
-import { selectUpdateNotice, updateInstallCommand } from "../src/cli/update-notifier.ts";
+import {
+  binaryAssetName,
+  binaryDownloadUrl,
+  runsAsStandaloneBinary,
+  selectUpdateNotice,
+  updateInstallCommand,
+} from "../src/cli/update-notifier.ts";
 
 describe("selectUpdateNotice", () => {
   it("advertises a strictly newer published version", () => {
@@ -26,5 +32,26 @@ describe("updateInstallCommand", () => {
 
   it("falls back to npm for unrecognized install locations", () => {
     expect(updateInstallCommand("pkg", "/usr/local/bin/tf-hub")).toBe("npm install -g pkg");
+  });
+});
+
+describe("standalone binary mode", () => {
+  it("detects Bun's virtual filesystem entry paths on every platform", () => {
+    expect(runsAsStandaloneBinary("/$bunfs/root/index.mjs")).toBe(true);
+    expect(
+      runsAsStandaloneBinary(String.raw`B:\~BUN
+oot\index.mjs`),
+    ).toBe(true);
+    expect(runsAsStandaloneBinary("/usr/local/bin/tf-hub/dist/index.mjs")).toBe(false);
+  });
+
+  it("names release assets after the running platform", () => {
+    expect(binaryAssetName("darwin", "arm64")).toBe("tf-hub-darwin-arm64");
+    expect(binaryAssetName("linux", "x64")).toBe("tf-hub-linux-x64");
+    expect(binaryAssetName("win32", "x64")).toBe("tf-hub-windows-x64.exe");
+  });
+
+  it("links the download to the exact release tag", () => {
+    expect(binaryDownloadUrl("1.2.3")).toContain("/releases/download/v1.2.3/tf-hub-");
   });
 });

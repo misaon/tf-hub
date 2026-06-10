@@ -1,6 +1,7 @@
 /tmp
 /dist
 /coverage
+/artifacts
 /node_modules
 
 .vscode/*
@@ -9,3 +10,4 @@
 
 # OpenAPI spec is a transient codegen input — refresh with `bun run generate`
 openapi.json
+*.bun-build

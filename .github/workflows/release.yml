@@ -29,8 +29,16 @@ jobs:
         run: test "v$(jq -r .version package.json)" = "$GITHUB_REF_NAME"
       - run: bun test
       - run: bun run build
+      - name: Build the standalone binaries
+        run: bun scripts/build-release-artifacts.ts
       - run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish the GitHub release from CHANGELOG.md
         run: bunx changelogen gh release "${GITHUB_REF_NAME#v}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      - name: Attach the binaries to the release
+        run: gh release upload "$GITHUB_REF_NAME" artifacts/release/* --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}

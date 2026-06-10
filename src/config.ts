@@ -12,6 +12,8 @@ export const idTokenHeaderName = read("k7");
 
 export const secureTokenEndpoint = "https://securetoken.googleapis.com/v1/token";
 
+export const repositoryUrl = "https://github.com/misaon/tf-hub";
+
 export const maxRecordsPerPage = 999;
 
 export const apiRequestTimeoutMs = 30_000;

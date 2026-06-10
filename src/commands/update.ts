@@ -1,8 +1,16 @@
+import { spawn } from "node:child_process";
+import { once } from "node:events";
 import { consola } from "consola";
 
 import packageJson from "../../package.json" with { type: "json" };
 import { defineCommand } from "../cli/command.ts";
-import { fetchLatestVersion, selectUpdateNotice, updateInstallCommand } from "../cli/update-notifier.ts";
+import {
+  binaryDownloadUrl,
+  fetchLatestVersion,
+  runsAsStandaloneBinary,
+  selectUpdateNotice,
+  updateInstallCommand,
+} from "../cli/update-notifier.ts";
 
 const registryTimeoutMs = 10_000;
 
@@ -26,11 +34,21 @@ export const updateCommand = defineCommand({
       return;
     }
 
+    if (runsAsStandaloneBinary()) {
+      consola.info(`v${newerVersion} is available. Download the binary for this machine:`);
+      consola.log(binaryDownloadUrl(newerVersion));
+      consola.log("Replace the current executable with the downloaded file.");
+
+      return;
+    }
+
     const installCommand = updateInstallCommand(packageJson.name);
 
     consola.info(`Updating v${packageJson.version} → v${newerVersion} via \`${installCommand}\`…`);
 
-    const exitCode = await Bun.spawn(installCommand.split(" "), { stdout: "inherit", stderr: "inherit" }).exited;
+    const [command = "", ...commandArguments] = installCommand.split(" ");
+    const installer = spawn(command, commandArguments, { stdio: "inherit" });
+    const [exitCode] = await once(installer, "exit");
 
     if (exitCode !== 0) {
       throw new Error(`Update failed (exit code ${exitCode}).`);

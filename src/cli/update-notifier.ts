@@ -1,9 +1,12 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { consola } from "consola";
 import { colors } from "consola/utils";
 import { ofetch } from "ofetch";
 import { z } from "zod";
+
+import { repositoryUrl } from "../config.ts";
 
 const checkIntervalMs = 24 * 60 * 60 * 1000;
 const networkTimeoutMs = 1500;
@@ -22,7 +25,7 @@ function cacheFilePath(packageName: string): string {
 
 async function readCache(filePath: string): Promise<UpdateCache | null> {
   try {
-    return cacheSchema.parse(await Bun.file(filePath).json());
+    return cacheSchema.parse(JSON.parse(await readFile(filePath, "utf8")));
   } catch {
     return null;
   }
@@ -30,7 +33,8 @@ async function readCache(filePath: string): Promise<UpdateCache | null> {
 
 async function writeCache(filePath: string, cache: UpdateCache): Promise<void> {
   try {
-    await Bun.write(filePath, JSON.stringify(cache), { createPath: true });
+    await mkdir(dirname(filePath), { recursive: true });
+    await writeFile(filePath, JSON.stringify(cache));
   } catch {
     // A non-writable cache directory must never break a command.
   }
@@ -48,12 +52,48 @@ export async function fetchLatestVersion(packageName: string, timeoutMs = networ
   }
 }
 
+// Strict x.y.z comparison; a published pre-release never wins over a stable build.
+function isNewerVersion(candidate: string, current: string): boolean {
+  if (candidate.includes("-")) {
+    return false;
+  }
+
+  const candidateParts = candidate.split(".").map(Number);
+  const currentParts = current.split("-")[0]?.split(".").map(Number) ?? [];
+
+  for (let index = 0; index < 3; index += 1) {
+    const difference = (candidateParts[index] ?? 0) - (currentParts[index] ?? 0);
+
+    if (difference !== 0) {
+      return difference > 0;
+    }
+  }
+
+  return false;
+}
+
 export function selectUpdateNotice(currentVersion: string, latestVersion: string | null): string | null {
   if (!latestVersion) {
     return null;
   }
 
-  return Bun.semver.order(latestVersion, currentVersion) === 1 ? latestVersion : null;
+  return isNewerVersion(latestVersion, currentVersion) ? latestVersion : null;
+}
+
+// Compiled executables serve their modules from Bun's virtual filesystem; under Node there is no Bun global.
+export function runsAsStandaloneBinary(entryPath = typeof Bun === "undefined" ? "" : Bun.main): boolean {
+  return entryPath.includes("/$bunfs/") || entryPath.includes("~BUN");
+}
+
+export function binaryAssetName(platform = process.platform, architecture = process.arch): string {
+  const operatingSystem = platform === "win32" ? "windows" : platform;
+  const extension = platform === "win32" ? ".exe" : "";
+
+  return `tf-hub-${operatingSystem}-${architecture}${extension}`;
+}
+
+export function binaryDownloadUrl(version: string): string {
+  return `${repositoryUrl}/releases/download/v${version}/${binaryAssetName()}`;
 }
 
 export function updateInstallCommand(packageName: string, binPath = process.argv[1] ?? ""): string {
@@ -98,8 +138,10 @@ export async function notifyOnUpdate(packageName: string, currentVersion: string
   const notice = selectUpdateNotice(currentVersion, latestVersion);
 
   if (notice) {
-    consola.box(
-      `Update available ${colors.dim(currentVersion)} → ${colors.green(notice)}\nRun ${colors.cyan(updateInstallCommand(packageName))} to update.`,
-    );
+    const instruction = runsAsStandaloneBinary()
+      ? `Run ${colors.cyan("tf-hub update")} to see the download link.`
+      : `Run ${colors.cyan(updateInstallCommand(packageName))} to update.`;
+
+    consola.box(`Update available ${colors.dim(currentVersion)} → ${colors.green(notice)}\n${instruction}`);
   }
 }

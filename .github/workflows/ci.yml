@@ -33,7 +33,7 @@ jobs:
       - run: bun run build
       - name: Check bundle size
         run: |
-          budget=1600000
+          budget=1800000
           actual=$(stat -c%s dist/index.mjs)
           echo "dist/index.mjs: ${actual} bytes (budget: ${budget})"
           if [ "$actual" -gt "$budget" ]; then

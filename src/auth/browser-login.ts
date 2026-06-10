@@ -1,3 +1,5 @@
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { once } from "node:events";
 import { consola } from "consola";
 import open from "open";
 import { z } from "zod";
@@ -39,6 +41,31 @@ export function buildLoginPage(): string {
     .replace("__FIREBASE_CONFIG__", JSON.stringify(config));
 }
 
+async function readJsonBody(request: IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = [];
+
+  for await (const chunk of request) {
+    chunks.push(chunk);
+  }
+
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    return null;
+  }
+}
+
+interface Reply {
+  status: number;
+  body: string;
+  contentType?: string;
+}
+
+function respond(response: ServerResponse, { status, body, contentType = "text/plain" }: Reply): void {
+  response.writeHead(status, { "content-type": contentType });
+  response.end(body);
+}
+
 export async function performBrowserLogin(
   launchBrowser: (url: string) => void = (url) =>
     void open(url).catch(() => consola.warn(`Couldn't open a browser. Open this URL manually:\n${url}`)),
@@ -49,45 +76,57 @@ export async function performBrowserLogin(
     reject: rejectResult,
   } = Promise.withResolvers<BrowserLoginResult>();
 
-  const server = Bun.serve({
-    port: 0,
-    hostname: "localhost",
-    async fetch(request) {
-      const url = new URL(request.url);
-
-      if (url.pathname === "/" && request.method === "GET") {
-        return new Response(buildLoginPage(), {
-          headers: { "content-type": "text/html; charset=utf-8" },
-        });
-      }
-
-      if (url.pathname === "/callback" && request.method === "POST") {
-        if (!request.headers.get("content-type")?.includes("application/json")) {
-          return new Response("Unsupported Media Type", { status: 415 });
-        }
-
-        const payload = callbackPayloadSchema.safeParse(await request.json().catch(() => null));
-
-        if (!payload.success) {
-          rejectResult(new Error("Incomplete response from the browser."));
-
-          return new Response("Bad Request", { status: 400 });
-        }
-
-        if ("error" in payload.data) {
-          rejectResult(new Error(payload.data.error));
-        } else {
-          resolveResult(payload.data);
-        }
-
-        return new Response("OK");
-      }
-
-      return new Response("Not found", { status: 404 });
-    },
+  const server = createServer((request, response) => {
+    void handleRequest(request, response);
   });
 
-  const loginUrl = `http://localhost:${server.port}/`;
+  async function handleRequest(request: IncomingMessage, response: ServerResponse): Promise<void> {
+    if (request.url === "/" && request.method === "GET") {
+      respond(response, { status: 200, body: buildLoginPage(), contentType: "text/html; charset=utf-8" });
+
+      return;
+    }
+
+    if (request.url === "/callback" && request.method === "POST") {
+      if (!request.headers["content-type"]?.includes("application/json")) {
+        respond(response, { status: 415, body: "Unsupported Media Type" });
+
+        return;
+      }
+
+      const payload = callbackPayloadSchema.safeParse(await readJsonBody(request));
+
+      if (!payload.success) {
+        rejectResult(new Error("Incomplete response from the browser."));
+        respond(response, { status: 400, body: "Bad Request" });
+
+        return;
+      }
+
+      if ("error" in payload.data) {
+        rejectResult(new Error(payload.data.error));
+      } else {
+        resolveResult(payload.data);
+      }
+
+      respond(response, { status: 200, body: "OK" });
+
+      return;
+    }
+
+    respond(response, { status: 404, body: "Not found" });
+  }
+
+  server.listen(0, "localhost");
+  await once(server, "listening");
+
+  const address = server.address();
+
+  if (address === null || typeof address === "string") {
+    throw new Error("Could not determine the local login server port.");
+  }
+
+  const loginUrl = `http://localhost:${address.port}/`;
 
   consola.info(`Opening browser: ${loginUrl}`);
   launchBrowser(loginUrl);
@@ -96,6 +135,7 @@ export async function performBrowserLogin(
   try {
     return await resultPromise;
   } finally {
-    await server.stop();
+    server.closeAllConnections();
+    server.close();
   }
 }
