@@ -65,7 +65,8 @@ export const worklogsDomain: RegistryEntry = defineDomain({
       action: "list",
       description:
         "List logged work (time tracking): date, time spent, cost category, project and description, plus the " +
-        "total time of the selection. Worked hours feed the XP calculation in The Game.",
+        "total time of the selection. The timeSpent values are in minutes. Worked hours feed the XP calculation " +
+        "in The Game.",
       input: filterInput,
       async run({ mine, collaboratorUuid, ...rest }) {
         let resolvedCollaboratorUuid = collaboratorUuid;
@@ -147,7 +148,9 @@ export const worklogsDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "category-sum",
-      description: "Sum the logged time per cost category for the selected period and filters.",
+      description:
+        "Sum the logged time per cost category for the selected period and filters. The timeSpent values are " +
+        "in minutes.",
       input: filterInput,
       async run({ mine, collaboratorUuid, ...rest }) {
         let resolvedCollaboratorUuid = collaboratorUuid;
@@ -165,7 +168,9 @@ export const worklogsDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "year-stats",
-      description: "Show monthly logged time per cost category for the year ending at the given date (12 months back).",
+      description:
+        "Show monthly logged time per cost category for the year ending at the given date (12 months back). " +
+        "The timeSpent values are in minutes.",
       input: z.object({
         toDate: dateField("End of the one-year window (YYYY-MM-DD), e.g. today."),
         collaboratorUuid: uuidField("Only worklogs of the collaborator with this UUID.").optional(),
