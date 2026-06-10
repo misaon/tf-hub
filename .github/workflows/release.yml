@@ -35,11 +35,10 @@ jobs:
       - run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      - name: Publish the GitHub release from CHANGELOG.md
-        run: bunx changelogen gh release "${GITHUB_REF_NAME#v}"
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - name: Attach the binaries to the release
-        run: gh release upload "$GITHUB_REF_NAME" artifacts/release/* --clobber
+      - name: Publish the GitHub release with the binaries
+        run: |
+          awk '/^## /{count++} count==1' CHANGELOG.md > release-notes.md
+          gh release create "$GITHUB_REF_NAME" artifacts/release/* \
+            --title "$GITHUB_REF_NAME" --notes-file release-notes.md --verify-tag
         env:
           GH_TOKEN: ${{ github.token }}
