@@ -1,9 +1,5 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "printWidth": 120,
-  "ignorePatterns": [
-    "dist",
-    "src/api/generated",
-    "CHANGELOG.md"
-  ]
+  "ignorePatterns": ["dist", "src/api/generated", "CHANGELOG.md"]
 }
