@@ -9,3 +9,7 @@ rules:
       # Low-confidence false positive: setup-node only caches when the `cache:` input is set,
       # and the publish job deliberately sets none.
       - release.yml
+  use-trusted-publishing:
+    ignore:
+      # Trusted publishing requires a public repository; planned for the moment the repo opens up.
+      - release.yml
