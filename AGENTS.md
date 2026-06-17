@@ -64,6 +64,22 @@ One folder per feature domain; everything wires up exactly once.
 3. New domain? Create the folder and add the entry to `domains/index.ts` (order = help order).
 4. Add a focused test in `tests/` — assert behavior and failure paths, never trivia.
 
+## Data, not answers
+
+The CLI and the MCP tools are a data faucet, never a calculator. Agents and shell pipes do the math —
+`game show --json` plus one `max()` answers "who has the most XP" with zero new code, and that is the
+desired state, not a gap. Before adding anything, apply this test: _can an agent answer the question from
+one existing call's `--json` output with a trivial transform?_
+
+- Yes → no code. Resist the convenience method.
+- No, because the data is distorted (wrong units, embedded base64, HTML noise, N+1 calls, selectors nobody
+  has at hand) → fix the data fidelity here. This set is finite and every fix helps every future question.
+- No, because the server does not expose the data → server backlog, never client-side computation.
+
+Two narrow exceptions: presentation sugar in `render` (totals under a table, sorting) — humans cannot pipe,
+and agents never see renders; and generic mechanisms that amortize across every operation (`--mine`
+resolution, help summaries, `plainText`) — one implementation for all, never a method for one question.
+
 ## Code requirements (non-negotiable)
 
 - English everywhere, correct grammar; no abbreviations in identifiers, files or folders.
