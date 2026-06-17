@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 
-import { formatMinutes, formatName, formatValue, missingValue } from "../src/cli/output.ts";
+import { formatMinutes, formatName, formatValue, missingValue, plainText } from "../src/cli/output.ts";
 import { renderTable } from "../src/cli/table.ts";
 
 describe("renderTable", () => {
@@ -59,5 +59,20 @@ describe("formatValue", () => {
     expect(formatValue(false)).toBe("no");
     expect(formatValue("")).toBe(missingValue);
     expect(formatValue(null)).toBe(missingValue);
+  });
+});
+
+describe("plainText", () => {
+  it("replaces inline images with a placeholder", () => {
+    expect(plainText('<p>Hi<img src="data:image/png;base64,AAAA"></p>')).toBe("Hi [image]");
+  });
+
+  it("strips tags, decodes entities and keeps block breaks", () => {
+    expect(plainText("<h1>Title</h1><p>A &amp; B&nbsp;&lt;ok&gt;</p>")).toBe("Title\nA & B <ok>");
+  });
+
+  it("returns an empty string for missing input", () => {
+    expect(plainText(null)).toBe("");
+    expect(plainText(undefined)).toBe("");
   });
 });

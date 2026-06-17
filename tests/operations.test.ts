@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test";
 import { getCurrentCollaborator, resolveCollaboratorScope } from "../src/domains/collaborators/api.ts";
 import { absencesDomain } from "../src/domains/absences/index.ts";
 import { documentsDomain } from "../src/domains/documents/index.ts";
+import { colleaguesDomain } from "../src/domains/collaborators/index.ts";
 import { goalsDomain } from "../src/domains/goals/index.ts";
 import { meEntry } from "../src/domains/profile/index.ts";
 import type { Operation } from "../src/domains/operation.ts";
@@ -152,6 +153,25 @@ describe("resolveCollaboratorScope", () => {
 
     await expect(resolveCollaboratorScope({ mine: false, collaboratorUuid: undefined })).resolves.toBeUndefined();
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("colleagues operations", () => {
+  const profile = Object.freeze({
+    ...me,
+    bioText: '<h1>About</h1><p>Hello<img src="data:image/png;base64,AAAA"></p>',
+  });
+
+  it("returns plain-text bios for the whole directory in a single call", async () => {
+    await seedValidSession();
+
+    const fetchSpy = mockFetch(() => Promise.resolve(jsonResponse({ message: "OK", data: [profile] })));
+
+    const listOperation = operationByName(colleaguesDomain.operations, "colleagues-list");
+    const colleagues = await listOperation.run(listOperation.input.parse({ withBios: true }));
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(colleagues).toEqual([expect.objectContaining({ bioText: "About\nHello [image]" })]);
   });
 });
 

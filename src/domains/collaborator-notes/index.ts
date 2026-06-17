@@ -7,6 +7,7 @@ import {
   deletedRenderer,
   detailsRenderer,
   ellipsize,
+  plainText,
   formatDate,
   formatName,
   formatValue,
@@ -49,7 +50,7 @@ const noteDetails = detailsRenderer<CollaboratorNote>([
   ["Date", (note) => formatDate(note.createdAt)],
   ["Collaborator", (note) => formatName(note.collaborator)],
   ["Editor", (note) => formatName(note.editor)],
-  ["Note", (note) => ellipsize(note.note, 100)],
+  ["Note", (note) => ellipsize(plainText(note.note), 100)],
   ["UUID", (note) => formatValue(note.uuid)],
 ]);
 
@@ -73,7 +74,7 @@ export const collaboratorNotesDomain: RegistryEntry = defineDomain({
       render: tableRenderer<CollaboratorNote>([
         ["Date", (note) => formatDate(note.createdAt)],
         ["Collaborator", (note) => formatName(note.collaborator)],
-        ["Note", (note) => ellipsize(note.note, 60)],
+        ["Note", (note) => ellipsize(plainText(note.note), 60)],
         ["UUID", (note) => formatValue(note.uuid)],
       ]),
     }),

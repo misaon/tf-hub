@@ -4,6 +4,7 @@ import {
   deletedRenderer,
   detailsRenderer,
   ellipsize,
+  plainText,
   formatDate,
   formatName,
   formatValue,
@@ -55,7 +56,7 @@ const noteDetails = detailsRenderer<SitdownNote>([
   ["ID", (note) => formatValue(note.id)],
   ["Project", (note) => formatName(note.project)],
   ["Deadline", (note) => formatDate(note.deadline)],
-  ["Text", (note) => ellipsize(note.text, 100)],
+  ["Text", (note) => ellipsize(plainText(note.text), 100)],
 ]);
 
 const timeColumns: ColumnSpec<SitdownTime>[] = [
@@ -157,7 +158,7 @@ export const sitdownNotesDomain: RegistryEntry = defineDomain({
         ["Project", (note) => formatName(note.project)],
         ["Deadline", (note) => formatDate(note.deadline)],
         ["Resolved", (note) => formatValue(Boolean(note.deletedAt))],
-        ["Text", (note) => ellipsize(note.text, 50)],
+        ["Text", (note) => ellipsize(plainText(note.text), 50)],
       ]),
     }),
     defineAction({
