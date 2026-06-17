@@ -80,6 +80,31 @@ export function formatValue(value: string | number | boolean | null | undefined)
   return String(value);
 }
 
+const htmlEntities: Record<string, string> = {
+  amp: "&",
+  apos: "'",
+  gt: ">",
+  lt: "<",
+  nbsp: " ",
+  quot: '"',
+};
+
+export function plainText(html: string | null | undefined): string {
+  if (!html) {
+    return "";
+  }
+
+  return html
+    .replaceAll(/<img[^>]*>/giu, " [image] ")
+    .replaceAll(/<br\s*\/?>|<\/(?:p|h[1-6]|li|div)>/giu, "\n")
+    .replaceAll(/<[^>]+>/gu, "")
+    .replaceAll(/&#(?<code>\d+);/gu, (match, code: string) => String.fromCodePoint(Number(code)) || match)
+    .replaceAll(/&(?<name>[a-z]+);/gu, (match, name: string) => htmlEntities[name] ?? match)
+    .replaceAll(/[^\S\n]+/gu, " ")
+    .replaceAll(/\s*\n\s*/gu, "\n")
+    .trim();
+}
+
 export function ellipsize(value: string | null | undefined, maxLength = 60): string {
   if (!value) {
     return missingValue;

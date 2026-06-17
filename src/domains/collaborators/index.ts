@@ -6,6 +6,7 @@ import {
   formatDate,
   formatName,
   formatValue,
+  plainText,
   printTable,
   tableRenderer,
   type ColumnSpec,
@@ -69,12 +70,23 @@ export const colleaguesDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "list",
       description:
-        "List the public company directory of colleagues: name, position, department and email. Bios are omitted — use colleagues-show for one person's full profile.",
-      input: z.object({ limit: limitField, offset: offsetField }),
-      async run(input) {
-        const collaborators = await listPublicCollaborators(input);
+        "List the public company directory of colleagues: name, position, department and email. Bios are " +
+        "omitted unless withBios=true returns them as plain text — one call instead of one per person.",
+      input: z.object({
+        limit: limitField,
+        offset: offsetField,
+        withBios: z.boolean().default(false).describe("Include each colleague's bio as plain text."),
+      }),
+      async run({ withBios, ...paging }) {
+        const collaborators = await listPublicCollaborators(paging);
 
-        return collaborators.map((collaborator) => omitBio(collaborator));
+        if (!withBios) {
+          return collaborators.map((collaborator) => omitBio(collaborator));
+        }
+
+        return collaborators.map((collaborator) =>
+          Object.assign(collaborator, { bioText: plainText(collaborator.bioText) }),
+        );
       },
       render: sortedTableRenderer([
         ["Name", formatName],
@@ -85,10 +97,16 @@ export const colleaguesDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "show",
-      description: "Show the public profile of a single colleague: bio, position, department, email and game level.",
+      description:
+        "Show the public profile of a single colleague: bio (as plain text), position, department, email and " +
+        "game level.",
       input: z.object({ uuid: uuidField("UUID of the colleague (see `colleagues-list`).") }),
       positionals: ["uuid"],
-      run: (input) => getPublicCollaborator(input),
+      async run(input) {
+        const profile = await getPublicCollaborator(input);
+
+        return { ...profile, bioText: plainText(profile.bioText) };
+      },
       render: detailsRenderer<Collaborator>([
         ["Name", formatName],
         ["Position", positionOf],

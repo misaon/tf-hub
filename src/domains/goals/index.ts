@@ -4,6 +4,7 @@ import {
   deletedRenderer,
   detailsRenderer,
   ellipsize,
+  plainText,
   formatDate,
   formatName,
   formatValue,
@@ -45,14 +46,14 @@ const goalDetails = detailsRenderer<Goal>([
   ...goalIdentityColumns,
   ["Done", (goal) => formatValue(goal.done ?? false)],
   ["Active", (goal) => formatValue(goal.active ?? true)],
-  ["Goal", (goal) => ellipsize(goal.message, 100)],
+  ["Goal", (goal) => ellipsize(plainText(goal.message), 100)],
 ]);
 
 const visionDetails = detailsRenderer<Vision>([
   ["ID", (vision) => formatValue(vision.id)],
   ["Collaborator", (vision) => formatName(vision.collaborator)],
   ["Updated", (vision) => formatDate(vision.updatedAt)],
-  ["Vision", (vision) => ellipsize(vision.message, 200)],
+  ["Vision", (vision) => ellipsize(plainText(vision.message), 200)],
 ]);
 
 export const goalsDomain: RegistryEntry = defineDomain({
@@ -79,7 +80,7 @@ export const goalsDomain: RegistryEntry = defineDomain({
       render: tableRenderer<Goal>([
         ...goalIdentityColumns,
         ["Done", (goal) => formatValue(goal.done ?? false)],
-        ["Goal", (goal) => ellipsize(goal.message, 50)],
+        ["Goal", (goal) => ellipsize(plainText(goal.message), 50)],
       ]),
     }),
     defineAction({

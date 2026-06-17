@@ -4,6 +4,7 @@ import {
   deletedRenderer,
   detailsRenderer,
   ellipsize,
+  plainText,
   formatDate,
   formatName,
   formatValue,
@@ -33,7 +34,7 @@ const oneOnOneDetails = detailsRenderer<OneOnOne>([
   ["Company rating", (oneOnOne) => formatValue(oneOnOne.companyRating)],
   ["Own rating", (oneOnOne) => formatValue(oneOnOne.collaboratorRating)],
   ["Financial", (oneOnOne) => formatValue(oneOnOne.isFinancialMessage ?? false)],
-  ["Message", (oneOnOne) => ellipsize(oneOnOne.message, 100)],
+  ["Message", (oneOnOne) => ellipsize(plainText(oneOnOne.message), 100)],
   ["UUID", (oneOnOne) => formatValue(oneOnOne.uuid)],
 ]);
 
@@ -62,7 +63,7 @@ export const oneOnOnesDomain: RegistryEntry = defineDomain({
         ["Company", (oneOnOne) => formatValue(oneOnOne.companyRating)],
         ["Own", (oneOnOne) => formatValue(oneOnOne.collaboratorRating)],
         ["Financial", (oneOnOne) => formatValue(oneOnOne.isFinancialMessage ?? false)],
-        ["Message", (oneOnOne) => ellipsize(oneOnOne.message, 40)],
+        ["Message", (oneOnOne) => ellipsize(plainText(oneOnOne.message), 40)],
         ["UUID", (oneOnOne) => formatValue(oneOnOne.uuid)],
       ]),
     }),
