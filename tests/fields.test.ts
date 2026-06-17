@@ -10,9 +10,11 @@ import {
 } from "../src/domains/fields.ts";
 
 describe("monthField", () => {
-  it("pads single-digit months", () => {
-    expect(monthField("m").parse("2026-5")).toBe("2026-05");
+  it("normalizes months to the unpadded form the Hub expects", () => {
+    expect(monthField("m").parse("2026-05")).toBe("2026-5");
+    expect(monthField("m").parse("2026-5")).toBe("2026-5");
     expect(monthField("m").parse("2026-12")).toBe("2026-12");
+    expect(monthField("m").parse("2026-10")).toBe("2026-10");
   });
 
   it("rejects invalid months", () => {

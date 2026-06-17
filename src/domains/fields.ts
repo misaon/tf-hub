@@ -30,11 +30,13 @@ export function uuidField(description: string) {
 
 const monthPattern = /^\d{4}-(?:0?[1-9]|1[0-2])$/u;
 
-export function monthField(description = "Month as YYYY-MM, e.g. 2026-05.") {
+const toUnpaddedMonth = (value: string): string => value.replace(/-0(?=\d$)/u, "-");
+
+export function monthField(description = "Month as YYYY-M, e.g. 2026-5.") {
   return z
     .string()
-    .regex(monthPattern, "Invalid month. Use the format YYYY-MM, e.g. 2026-05.")
-    .transform((value) => value.replace(/-(?=\d$)/u, "-0"))
+    .regex(monthPattern, "Invalid month. Use the format YYYY-M, e.g. 2026-5.")
+    .transform(toUnpaddedMonth)
     .describe(description);
 }
 
