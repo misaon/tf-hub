@@ -4,6 +4,26 @@ All notable changes are documented here. This file is maintained by
 [changelogen](https://github.com/unjs/changelogen) from
 [Conventional Commits](https://www.conventionalcommits.org).
 
+## v0.1.3
+
+[compare changes](https://github.com/misaon/tf-hub/compare/v0.1.2...v0.1.3)
+
+### 🚀 Enhancements
+
+- Plain-text rendering and bulk colleague bios ([dcc660e](https://github.com/misaon/tf-hub/commit/dcc660e))
+
+### 🩹 Fixes
+
+- **game:** Send the unpadded month format the Hub expects ([443cfc7](https://github.com/misaon/tf-hub/commit/443cfc7))
+
+### 📖 Documentation
+
+- Add the data-not-answers principle ([b132577](https://github.com/misaon/tf-hub/commit/b132577))
+
+### ❤️ Contributors
+
+- Ondřej Misák ([@misaon](https://github.com/misaon))
+
 ## v0.1.2
 
 [compare changes](https://github.com/misaon/tf-hub/compare/v0.1.1...v0.1.2)
