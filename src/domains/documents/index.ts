@@ -38,7 +38,7 @@ export const documentsDomain: RegistryEntry = defineDomain({
         offset: offsetField,
         mine: z.boolean().default(false).describe("Only documents addressed to the signed-in user."),
         userUuid: uuidField("Only documents addressed to the user with this UUID.").optional(),
-        month: monthField("Only documents sent in this month (YYYY-MM).").optional(),
+        month: monthField("Only documents sent in this month (YYYY-M).").optional(),
       }),
       async run({ mine, userUuid, ...rest }) {
         return listDocuments({

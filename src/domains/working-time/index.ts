@@ -61,7 +61,7 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
         limit: limitField,
         offset: offsetField,
         collaboratorUuid: uuidField("Only records of the collaborator with this UUID.").optional(),
-        month: monthField("Only records for this month (YYYY-MM).").optional(),
+        month: monthField("Only records for this month (YYYY-M).").optional(),
       }),
       run: (input) => listWorkingTimeRecords(input),
       render: tableRenderer<WorkingTimeRecord>([

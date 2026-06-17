@@ -4,6 +4,7 @@ import { getCurrentCollaborator, resolveCollaboratorScope } from "../src/domains
 import { absencesDomain } from "../src/domains/absences/index.ts";
 import { documentsDomain } from "../src/domains/documents/index.ts";
 import { colleaguesDomain } from "../src/domains/collaborators/index.ts";
+import { gameDomain } from "../src/domains/game/index.ts";
 import { goalsDomain } from "../src/domains/goals/index.ts";
 import { meEntry } from "../src/domains/profile/index.ts";
 import type { Operation } from "../src/domains/operation.ts";
@@ -172,6 +173,21 @@ describe("colleagues operations", () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(colleagues).toEqual([expect.objectContaining({ bioText: "About\nHello [image]" })]);
+  });
+});
+
+describe("game month formatting", () => {
+  it("sends the unpadded month the Hub keys its records on", async () => {
+    await seedValidSession();
+
+    const fetchSpy = mockFetch(() => Promise.resolve(jsonResponse({ message: "OK", data: [] })));
+
+    const donorsOperation = operationByName(gameDomain.operations, "game-donors");
+    await donorsOperation.run(donorsOperation.input.parse({ month: "2026-06" }));
+
+    const requestUrl = String(fetchSpy.mock.calls[0]?.[0]);
+    expect(requestUrl).toContain("/game/donors/2026-6");
+    expect(requestUrl).not.toContain("2026-06");
   });
 });
 
