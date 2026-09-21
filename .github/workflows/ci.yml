@@ -29,7 +29,7 @@ jobs:
           key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
       - run: bun install --frozen-lockfile
-      - uses: crate-ci/typos@v1.50.1
+      - uses: crate-ci/typos@v1.50.2
       - run: bun run lint
       - run: bun run fmt:check
       - run: bun run knip
@@ -45,7 +45,7 @@ jobs:
             echo "::error::dist/index.mjs exceeds the size budget: ${actual} > ${budget} bytes"
             exit 1
           fi
-      - uses: codecov/codecov-action@v7.0.0
+      - uses: codecov/codecov-action@v7.1.1
         with:
           files: coverage/lcov.info
           token: ${{ secrets.CODECOV_TOKEN }}
