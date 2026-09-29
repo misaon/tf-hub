@@ -1,6 +1,17 @@
 import { spyOn, type Mock } from "bun:test";
 
 import { writeStoredCredentials, type StoredCredentials } from "../src/auth/store.ts";
+import type { Operation } from "../src/domains/operation.ts";
+
+export function operationByName(operations: readonly Operation[], name: string): Operation {
+  const operation = operations.find((candidate) => candidate.name === name);
+
+  if (!operation) {
+    throw new Error(`Operation ${name} is not registered.`);
+  }
+
+  return operation;
+}
 
 export function seedValidSession(overrides: Partial<StoredCredentials> = {}): Promise<void> {
   return writeStoredCredentials({

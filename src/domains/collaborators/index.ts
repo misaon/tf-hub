@@ -29,6 +29,7 @@ import {
   getPublicCollaborator,
   listPublicCollaborators,
   omitBio,
+  omitPositionPermissions,
   updateCollaborator,
   updateCollaboratorBio,
   updateCollaboratorLanguage,
@@ -70,7 +71,7 @@ export const colleaguesDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "list",
       description:
-        "List the public company directory of colleagues: name, position, department and email. Bios are " +
+        "List the public company directory of colleagues: name, uuid, position, department and email. Bios are " +
         "omitted unless withBios=true returns them as plain text — one call instead of one per person.",
       input: z.object({
         limit: limitField,
@@ -78,7 +79,8 @@ export const colleaguesDomain: RegistryEntry = defineDomain({
         withBios: z.boolean().default(false).describe("Include each colleague's bio as plain text."),
       }),
       async run({ withBios, ...paging }) {
-        const collaborators = await listPublicCollaborators(paging);
+        const directory = await listPublicCollaborators(paging);
+        const collaborators = directory.map((collaborator) => omitPositionPermissions(collaborator));
 
         if (!withBios) {
           return collaborators.map((collaborator) => omitBio(collaborator));
@@ -103,7 +105,7 @@ export const colleaguesDomain: RegistryEntry = defineDomain({
       input: z.object({ uuid: uuidField("UUID of the colleague (see `colleagues-list`).") }),
       positionals: ["uuid"],
       async run(input) {
-        const profile = await getPublicCollaborator(input);
+        const profile = omitPositionPermissions(await getPublicCollaborator(input));
 
         return { ...profile, bioText: plainText(profile.bioText) };
       },

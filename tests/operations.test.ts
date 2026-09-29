@@ -7,19 +7,8 @@ import { colleaguesDomain } from "../src/domains/collaborators/index.ts";
 import { gameDomain } from "../src/domains/game/index.ts";
 import { goalsDomain } from "../src/domains/goals/index.ts";
 import { meEntry } from "../src/domains/profile/index.ts";
-import type { Operation } from "../src/domains/operation.ts";
 import { worklogsDomain } from "../src/domains/worklogs/index.ts";
-import { jsonResponse, mockFetch, seedValidSession } from "./support.ts";
-
-function operationByName(operations: readonly Operation[], name: string): Operation {
-  const operation = operations.find((candidate) => candidate.name === name);
-
-  if (!operation) {
-    throw new Error(`Operation ${name} is not registered.`);
-  }
-
-  return operation;
-}
+import { jsonResponse, mockFetch, operationByName, seedValidSession } from "./support.ts";
 
 const me = Object.freeze({
   id: 7,

@@ -92,6 +92,70 @@ describe("mcp server", () => {
 
     const [block] = textContentSchema.parse(result.content);
     expect(JSON.parse(block?.text ?? "")).toEqual([collaborator]);
+    expect(block?.text).not.toContain("\n");
+  });
+
+  it("leads the result with a paging note when the server holds more records than it returned", async () => {
+    await seedValidSession();
+    mockFetch(() =>
+      Promise.resolve(
+        jsonResponse({ message: "OK", data: [{ id: 1 }], metadata: { totalItems: 40, offset: 0, limit: 1 } }),
+      ),
+    );
+
+    const client = await connectClient();
+    const result = await client.callTool({ name: "permissions", arguments: { limit: 1 } });
+    const [note, data] = textContentSchema.parse(result.content);
+
+    expect(JSON.parse(data?.text ?? "")).toEqual([{ id: 1 }]);
+    expect(note?.text).toBe(
+      "Returned 1 of 40 matching records (offset 0). Narrow the filters or request the next page with offset=1.",
+    );
+  });
+
+  it("adds no paging note when every matching record was returned", async () => {
+    await seedValidSession();
+    mockFetch(() =>
+      Promise.resolve(jsonResponse({ message: "OK", data: [{ id: 1 }], metadata: { totalItems: 1, offset: 0 } })),
+    );
+
+    const client = await connectClient();
+    const result = await client.callTool({ name: "permissions", arguments: {} });
+
+    expect(textContentSchema.parse(result.content)).toHaveLength(1);
+  });
+
+  it("points to mine=true when reading other people's records is forbidden", async () => {
+    await seedValidSession();
+    mockFetch(() => Promise.resolve(jsonResponse({ message: "Insufficient permissions", statusCode: 403 }, 403)));
+
+    const client = await connectClient();
+    const result = await client.callTool({ name: "worklogs-list", arguments: {} });
+    const [block] = textContentSchema.parse(result.content);
+
+    expect(result.isError).toBe(true);
+    expect(block?.text).toContain("Insufficient permissions.");
+    expect(block?.text).toContain("retry with mine=true");
+  });
+
+  it("accepts native arrays for list parameters", async () => {
+    await seedValidSession();
+
+    let requestBody: unknown = null;
+    mockFetch((_input, init) => {
+      requestBody = JSON.parse(String(init?.body));
+
+      return Promise.resolve(jsonResponse({ message: "OK", data: { id: 1, name: "Backend", users: [] } }));
+    });
+
+    const client = await connectClient();
+    const result = await client.callTool({
+      name: "substitute-groups-create",
+      arguments: { name: "Backend", userIds: [1, 2, 3] },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(requestBody).toEqual({ name: "Backend", userIds: [1, 2, 3] });
   });
 
   it("accepts already-transformed arguments for tools with transform fields", async () => {

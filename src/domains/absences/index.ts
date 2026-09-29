@@ -58,7 +58,9 @@ export const absencesDomain: RegistryEntry = defineDomain({
       action: "list",
       description:
         "List office absences with their approval state. Covers vacations, home office, business trips and " +
-        "sick leave. Approvers also see requests of others — pass mine=true for only your own records.",
+        "sick leave. dateFrom and dateTo select absences overlapping that range, so dateFrom=dateTo=<day> " +
+        "lists who is out that day; without them the whole history is returned. Approvers also see requests " +
+        "of others — pass mine=true for only your own records.",
       input: z.object({
         limit: limitField,
         offset: offsetField,
@@ -72,8 +74,8 @@ export const absencesDomain: RegistryEntry = defineDomain({
           .optional(),
         collaboratorUuid: uuidField("Only absences of the collaborator with this UUID.").optional(),
         approverUuid: uuidField("Only absences assigned to the approver with this UUID.").optional(),
-        dateFrom: dateField("Only absences starting on or after this date (YYYY-MM-DD).").optional(),
-        dateTo: dateField("Only absences ending on or before this date (YYYY-MM-DD).").optional(),
+        dateFrom: dateField("Only absences ending on or after this date (YYYY-MM-DD).").optional(),
+        dateTo: dateField("Only absences starting on or before this date (YYYY-MM-DD).").optional(),
       }),
       async run({ mine, collaboratorUuid, ...rest }) {
         return listOfficeAbsences({

@@ -7,6 +7,7 @@ import {
   explicitBooleanField,
   jsonField,
   monthField,
+  uuidField,
 } from "../src/domains/fields.ts";
 
 describe("monthField", () => {
@@ -23,11 +24,23 @@ describe("monthField", () => {
   });
 });
 
+describe("uuidField", () => {
+  it("accepts UUIDs and rejects anything else", () => {
+    expect(uuidField("id").parse("0f4ad4e4-7a69-11ed-9965-42010a7f9011")).toBe("0f4ad4e4-7a69-11ed-9965-42010a7f9011");
+    expect(() => uuidField("id").parse("not-a-uuid")).toThrow("Invalid UUID.");
+  });
+});
+
 describe("explicitBooleanField", () => {
-  it("parses only the literal strings true and false", () => {
+  it("parses the literal strings true and false from CLI flags", () => {
     expect(explicitBooleanField("b").parse("true")).toBe(true);
     expect(explicitBooleanField("b").parse("false")).toBe(false);
     expect(() => explicitBooleanField("b").parse("yes")).toThrow();
+  });
+
+  it("accepts native booleans from MCP clients", () => {
+    expect(explicitBooleanField("b").parse(true)).toBe(true);
+    expect(explicitBooleanField("b").parse(false)).toBe(false);
   });
 });
 
@@ -41,6 +54,12 @@ describe("comma-separated fields", () => {
     expect(commaSeparatedStringsField("labels").parse("a, b,,c")).toEqual(["a", "b", "c"]);
     expect(commaSeparatedStringsField("labels").parse("")).toEqual([]);
   });
+
+  it("accepts native arrays from MCP clients", () => {
+    expect(commaSeparatedNumbersField("ids").parse([1, 2])).toEqual([1, 2]);
+    expect(commaSeparatedStringsField("labels").parse(["a", "b"])).toEqual(["a", "b"]);
+    expect(() => commaSeparatedNumbersField("ids").parse(["1"])).toThrow();
+  });
 });
 
 describe("jsonField", () => {
@@ -48,6 +67,10 @@ describe("jsonField", () => {
 
   it("parses JSON and validates it against the inner schema", () => {
     expect(field.parse('[{"date":"2026-06-10"}]')).toEqual([{ date: "2026-06-10" }]);
+  });
+
+  it("accepts the value itself from MCP clients", () => {
+    expect(field.parse([{ date: "2026-06-10" }])).toEqual([{ date: "2026-06-10" }]);
   });
 
   it("rejects invalid JSON and schema mismatches", () => {

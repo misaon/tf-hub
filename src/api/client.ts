@@ -2,6 +2,7 @@ import { FetchError, ofetch } from "ofetch";
 
 import { getValidIdToken } from "../auth/tokens.ts";
 import { apiBaseUrl, apiRequestTimeoutMs, appLocale, idTokenHeaderName, webApplicationOrigin } from "../config.ts";
+import { recordTruncatedPage } from "./paging.ts";
 
 // The union type is the single source of allowed methods — no runtime constants needed.
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
@@ -67,28 +68,45 @@ function adviceFor(status: number | undefined): string {
   return "";
 }
 
+export class ApiRequestError extends Error {
+  readonly status: number | undefined;
+
+  constructor(message: string, status: number | undefined, options?: ErrorOptions) {
+    super(message, options);
+    this.name = "ApiRequestError";
+    this.status = status;
+  }
+}
+
+function requestFailure(path: string, error: unknown): unknown {
+  if (!(error instanceof FetchError)) {
+    return error;
+  }
+
+  const reason = error.status === undefined ? "network error or timeout" : `HTTP ${error.status}`;
+
+  return new ApiRequestError(
+    `Request to ${path} failed (${reason}).${describeServerError(error)}${adviceFor(error.status)}`,
+    error.status,
+    { cause: error },
+  );
+}
+
 // Returns the whole response body; most callers want `callApi`, which unwraps the `data` envelope.
 export async function callApiEnvelope(path: string, options: CallApiOptions = {}): Promise<unknown> {
   const idToken = await getValidIdToken();
+  const response = await apiClient<unknown>(path, {
+    method: options.method ?? "GET",
+    headers: { [idTokenHeaderName]: idToken },
+    ...(options.query ? { query: options.query } : {}),
+    ...(options.body ? { body: options.body } : {}),
+  }).catch((error: unknown) => {
+    throw requestFailure(path, error);
+  });
 
-  try {
-    return await apiClient<unknown>(path, {
-      method: options.method ?? "GET",
-      headers: { [idTokenHeaderName]: idToken },
-      ...(options.query ? { query: options.query } : {}),
-      ...(options.body ? { body: options.body } : {}),
-    });
-  } catch (error) {
-    if (!(error instanceof FetchError)) {
-      throw error;
-    }
+  recordTruncatedPage(path, response);
 
-    const reason = error.status === undefined ? "network error or timeout" : `HTTP ${error.status}`;
-
-    throw new Error(`Request to ${path} failed (${reason}).${describeServerError(error)}${adviceFor(error.status)}`, {
-      cause: error,
-    });
-  }
+  return response;
 }
 
 export async function callApi(path: string, options: CallApiOptions = {}): Promise<unknown> {

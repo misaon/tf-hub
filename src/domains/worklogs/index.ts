@@ -65,8 +65,9 @@ export const worklogsDomain: RegistryEntry = defineDomain({
       action: "list",
       description:
         "List logged work (time tracking): date, time spent, cost category, project and description, plus the " +
-        "total time of the selection. The timeSpent values are in minutes. Worked hours feed the XP calculation " +
-        "in The Game.",
+        "total time of the selection. The timeSpent values are in minutes. Pass mine=true for your own worklogs " +
+        "(other people's need extra permissions) and narrow the period with fromDate/toDate. Worked hours feed " +
+        "the XP calculation in The Game.",
       input: filterInput,
       async run({ mine, collaboratorUuid, ...rest }) {
         return listWorklogs({ ...rest, collaboratorUuid: await resolveCollaboratorScope({ mine, collaboratorUuid }) });

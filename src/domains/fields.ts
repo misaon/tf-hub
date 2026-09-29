@@ -24,18 +24,25 @@ export function idField(description: string) {
   return z.coerce.number().int().positive().describe(description);
 }
 
+const uuidPattern = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu;
+
+// A refinement instead of z.uuid() keeps Zod's 150-character regex out of the MCP tool list.
+// Clients still get `format: uuid`, without the pattern repeated for every UUID parameter.
 export function uuidField(description: string) {
-  return z.uuid({ error: "Invalid UUID." }).describe(description);
+  return z
+    .string()
+    .refine((value) => uuidPattern.test(value), "Invalid UUID.")
+    .meta({ format: "uuid", description });
 }
 
 const monthPattern = /^\d{4}-(?:0?[1-9]|1[0-2])$/u;
 
 const toUnpaddedMonth = (value: string): string => value.replace(/-0(?=\d$)/u, "-");
 
-export function monthField(description = "Month as YYYY-M, e.g. 2026-5.") {
+export function monthField(description = "Month as YYYY-MM, e.g. 2026-05.") {
   return z
     .string()
-    .regex(monthPattern, "Invalid month. Use the format YYYY-M, e.g. 2026-5.")
+    .regex(monthPattern, "Invalid month. Use the format YYYY-MM, e.g. 2026-05.")
     .transform(toUnpaddedMonth)
     .describe(description);
 }
@@ -54,10 +61,12 @@ export function dateTimeField(description: string) {
     .describe(description);
 }
 
+// Every field below accepts the native JSON type MCP clients send and the string form CLI flags carry.
 export function explicitBooleanField(description: string) {
   return z
-    .enum(["true", "false"])
-    .transform((value) => value === "true")
+    .union([z.boolean(), z.enum(["true", "false"]).transform((value) => value === "true")], {
+      error: "Expected true or false.",
+    })
     .describe(description);
 }
 
@@ -69,19 +78,30 @@ export function splitCommaList(value: string): string[] {
 }
 
 export function commaSeparatedNumbersField(description: string) {
+  const numericIds = z.array(z.number().int());
+
   return z
-    .string()
-    .transform((value) => splitCommaList(value).map(Number))
-    .pipe(z.array(z.number().int(), { error: "Expected a comma-separated list of numeric IDs." }))
+    .union(
+      [
+        numericIds,
+        z
+          .string()
+          .transform((value) => splitCommaList(value).map(Number))
+          .pipe(numericIds),
+      ],
+      {
+        error: "Expected a list of numeric IDs, e.g. [1, 2] or 1,2.",
+      },
+    )
     .describe(description);
 }
 
 export function commaSeparatedStringsField(description: string) {
-  return z.string().transform(splitCommaList).describe(description);
+  return z.union([z.array(z.string()), z.string().transform(splitCommaList)]).describe(description);
 }
 
 export function jsonField<Schema extends z.ZodType>(schema: Schema, description: string) {
-  return z
+  const serialized = z
     .string()
     .transform((value, context) => {
       try {
@@ -94,6 +114,7 @@ export function jsonField<Schema extends z.ZodType>(schema: Schema, description:
         return z.NEVER;
       }
     })
-    .pipe(schema)
-    .describe(description);
+    .pipe(schema);
+
+  return z.union([schema, serialized]).describe(description);
 }

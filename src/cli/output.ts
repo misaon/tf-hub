@@ -10,8 +10,9 @@ export const jsonArg = {
   default: false,
 } as const satisfies ArgDef;
 
+// Indented for people at a terminal; compact when piped, where agents pay for every token.
 export function printJson(data: unknown): void {
-  consola.log(JSON.stringify(data, null, 2));
+  consola.log(process.stdout.isTTY ? JSON.stringify(data, null, 2) : JSON.stringify(data));
 }
 
 export function printTable(rows: Record<string, string>[], headers: string[]): void {

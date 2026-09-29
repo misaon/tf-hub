@@ -1,9 +1,11 @@
 import type { ArgDef, ArgsDef, CommandDef } from "citty";
+import { consola } from "consola";
 import { z } from "zod";
 
-import type { Operation } from "../domains/operation.ts";
+import { runOperation, type Operation } from "../domains/operation.ts";
 import { defineCommand } from "./command.ts";
 import { jsonArg, printJson } from "./output.ts";
+import { registerCommandDetails } from "./usage.ts";
 
 export interface OperationPresentation<TOutput> {
   commandName?: string | undefined;
@@ -100,12 +102,17 @@ export function commandFromOperation<Shape extends z.ZodRawShape, TOutput>(
     args[key] = argFromField(field, presentation.positionals?.includes(key) ?? false);
   }
 
-  return defineCommand({
-    meta: { name: presentation.commandName ?? operation.name, description: summarize(operation.description) },
+  const summary = summarize(operation.description);
+  const command = defineCommand({
+    meta: { name: presentation.commandName ?? operation.name, description: summary },
     args,
     async run({ args: rawArgs }) {
       const rawInput = Object.fromEntries(Object.keys(operation.input.shape).map((key) => [key, rawArgs[key]]));
-      const data = await operation.run(operation.input.parse(rawInput));
+      const { data, notices } = await runOperation(operation, operation.input.parse(rawInput));
+
+      for (const notice of notices) {
+        consola.warn(notice);
+      }
 
       if (rawArgs["json"] === true) {
         printJson(data);
@@ -116,4 +123,10 @@ export function commandFromOperation<Shape extends z.ZodRawShape, TOutput>(
       presentation.render(data);
     },
   });
+
+  if (summary !== operation.description) {
+    registerCommandDetails(command, operation.description);
+  }
+
+  return command;
 }

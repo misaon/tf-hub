@@ -152,13 +152,17 @@ export const sitdownNotesDomain: RegistryEntry = defineDomain({
         orderBy: z.string().describe("Property to order by, e.g. deadline or createdAt.").optional(),
         orderDir: z.enum(sortDirections).describe("Order direction: ASC or DESC.").optional(),
       }),
-      run: (input) => listSitdownNotes(input),
+      async run(input) {
+        const notes = await listSitdownNotes(input);
+
+        return notes.map((note) => Object.assign(note, { text: plainText(note.text) }));
+      },
       render: tableRenderer<SitdownNote>([
         ["ID", (note) => formatValue(note.id)],
         ["Project", (note) => formatName(note.project)],
         ["Deadline", (note) => formatDate(note.deadline)],
         ["Resolved", (note) => formatValue(Boolean(note.deletedAt))],
-        ["Text", (note) => ellipsize(plainText(note.text), 50)],
+        ["Text", (note) => ellipsize(note.text, 50)],
       ]),
     }),
     defineAction({

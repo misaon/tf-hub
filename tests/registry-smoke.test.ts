@@ -42,10 +42,14 @@ function sampleValue(key: string, field: z.core.$ZodType): string {
     return matched[1];
   }
 
-  const inner = field instanceof z.ZodPipe ? field.def.in : field;
+  const alternatives = field instanceof z.ZodUnion ? field.def.options : [field];
 
-  if (inner instanceof z.ZodEnum) {
-    return String(inner.options[0]);
+  for (const alternative of alternatives) {
+    const inner = alternative instanceof z.ZodPipe ? alternative.def.in : alternative;
+
+    if (inner instanceof z.ZodEnum) {
+      return String(inner.options[0]);
+    }
   }
 
   return "sample";
@@ -122,21 +126,24 @@ describe("every registered operation", () => {
     };
     let payload: unknown = {};
 
-    mockFetch((input) =>
-      Promise.resolve(
-        String(input).includes("/collaborators/me")
-          ? jsonResponse({ message: "OK", data: me })
-          : jsonResponse({ message: "OK", data: payload, timeSpentSum: 0 }),
-      ),
-    );
+    mockFetch((input, init) => {
+      if (String(input).includes("/collaborators/me")) {
+        return Promise.resolve(jsonResponse({ message: "OK", data: me }));
+      }
+
+      const data = (init?.method ?? "GET") === "GET" ? payload : {};
+
+      return Promise.resolve(jsonResponse({ message: "OK", data, timeSpentSum: 0 }));
+    });
 
     const failures: string[] = [];
 
     for (const { operation, command, rawArgs } of smokeCases()) {
       let succeeded = false;
 
-      // Object and list endpoints tolerate different minimal payloads; accept whichever shape parses.
-      for (const candidate of [{}, []]) {
+      // Reads accept whichever minimal payload shape parses; writes always answer with a single record.
+      // A list holding the sample record covers operations that look the record up before writing.
+      for (const candidate of [{}, [], [{ uuid: me.uuid }]]) {
         payload = candidate;
         process.exitCode = 0;
         errorSpy.mockClear();
