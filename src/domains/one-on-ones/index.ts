@@ -11,7 +11,7 @@ import {
   tableRenderer,
 } from "../../cli/output.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
-import { dateField, limitField, offsetField, uuidField } from "../fields.ts";
+import { dateField, explicitBooleanField, limitField, offsetField, uuidField } from "../fields.ts";
 import {
   createOneOnOne,
   deleteOneOnOne,
@@ -45,8 +45,9 @@ export const oneOnOnesDomain: RegistryEntry = defineDomain({
     defineAction({
       action: "list",
       description:
-        "List 1on1 meeting records between managers and team members: date, notes, mutual ratings and whether " +
-        "the note contains financial (salary) information. Use mine=true to list the signed-in user's own 1on1s.",
+        "List 1on1 meeting records between managers and team members: date, notes as plain text, mutual " +
+        "ratings and whether the note contains financial (salary) information. Use mine=true to list the " +
+        "signed-in user's own 1on1s; managers see their team's records otherwise.",
       input: z.object({
         limit: limitField,
         offset: offsetField,
@@ -56,14 +57,18 @@ export const oneOnOnesDomain: RegistryEntry = defineDomain({
         dateFrom: dateField("Only 1on1s on or after this date (YYYY-MM-DD).").optional(),
         dateTo: dateField("Only 1on1s on or before this date (YYYY-MM-DD).").optional(),
       }),
-      run: (input) => listOneOnOnes(input),
+      async run(input) {
+        const oneOnOnes = await listOneOnOnes(input);
+
+        return oneOnOnes.map((oneOnOne) => Object.assign(oneOnOne, { message: plainText(oneOnOne.message) }));
+      },
       render: tableRenderer<OneOnOne>([
         ["Date", (oneOnOne) => formatDate(oneOnOne.date)],
         ["Collaborator", (oneOnOne) => formatName(oneOnOne.collaborator)],
         ["Company", (oneOnOne) => formatValue(oneOnOne.companyRating)],
         ["Own", (oneOnOne) => formatValue(oneOnOne.collaboratorRating)],
         ["Financial", (oneOnOne) => formatValue(oneOnOne.isFinancialMessage ?? false)],
-        ["Message", (oneOnOne) => ellipsize(plainText(oneOnOne.message), 40)],
+        ["Message", (oneOnOne) => ellipsize(oneOnOne.message, 40)],
         ["UUID", (oneOnOne) => formatValue(oneOnOne.uuid)],
       ]),
     }),
@@ -85,13 +90,19 @@ export const oneOnOnesDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "update",
-      description: "Update a 1on1 record's notes, ratings or financial flag (managers).",
+      description:
+        "Update a 1on1 record's notes, ratings or financial flag (managers). Every field is stored as given: " +
+        "the message replaces the stored notes, and since lists return notes as plain text, re-sending that " +
+        "text drops the original formatting and embedded images.",
       input: z.object({
         uuid: uuidField("UUID of the 1on1 record."),
-        message: z.string().min(1).describe("Updated notes."),
+        message: z.string().min(1).describe("Updated notes (HTML or plain text)."),
         companyRating: z.enum(oneOnOneRatings).describe(ratingDescription("Company/manager")),
         collaboratorRating: z.enum(oneOnOneRatings).describe(ratingDescription("Collaborator's own")).optional(),
-        isFinancialMessage: financialFlagField,
+        isFinancialMessage: explicitBooleanField(
+          "Whether the notes are financial (salary) with restricted visibility; pass the current value to keep it " +
+            "(true/false).",
+        ),
       }),
       positionals: ["uuid"],
       run: (input) => updateOneOnOne(input),

@@ -10,6 +10,7 @@ import {
   printSuccess,
   tableRenderer,
 } from "../../cli/output.ts";
+import { resolveCollaboratorScope } from "../collaborators/api.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
 import { idField, jsonField, limitField, monthField, offsetField, uuidField } from "../fields.ts";
 import {
@@ -56,14 +57,20 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
       action: "list",
       description:
         "List working time records (legal attendance). They record the start and end of work per day and are " +
-        "separate from worklogs. Regular users see their own records.",
+        "separate from worklogs. Pass mine=true for your own records; other people's need HR permissions.",
       input: z.object({
         limit: limitField,
         offset: offsetField,
+        mine: z.boolean().default(false).describe("Only records of the signed-in user."),
         collaboratorUuid: uuidField("Only records of the collaborator with this UUID.").optional(),
-        month: monthField("Only records for this month (YYYY-M).").optional(),
+        month: monthField("Only records for this month (YYYY-MM).").optional(),
       }),
-      run: (input) => listWorkingTimeRecords(input),
+      async run({ mine, collaboratorUuid, ...rest }) {
+        return listWorkingTimeRecords({
+          ...rest,
+          collaboratorUuid: await resolveCollaboratorScope({ mine, collaboratorUuid }),
+        });
+      },
       render: tableRenderer<WorkingTimeRecord>([
         ["Month", (record) => formatValue(record.month)],
         ["User", (record) => formatName(record.user)],
@@ -133,7 +140,7 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
         note: z.string().describe("Note attached to the record item.").optional(),
         dateItems: jsonField(
           dateItemsSchema,
-          'Daily blocks as JSON, e.g. [{"date":"2026-06-10","workItems":[{"type":"WORK",' +
+          'Daily blocks, e.g. [{"date":"2026-06-10","workItems":[{"type":"WORK",' +
             '"workStart":"2026-06-10T08:00:00","workEnd":"2026-06-10T12:00:00"}]}]. ' +
             `Item types: ${workingTimeRecordTypes.join(", ")}.`,
         ),

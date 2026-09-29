@@ -3,7 +3,7 @@ import { z } from "zod";
 import { callApi } from "../../api/client.ts";
 import { zSitdownNotesDto, zSitdownsDto, zSitdownsRatingsDto, zSitdownsTimesDto } from "../../api/generated/zod.gen.ts";
 import { v2 } from "../../api/paths.ts";
-import type { Paging } from "../shared.ts";
+import { flagParameter, type Paging } from "../shared.ts";
 
 const sitdownsPath = v2("sitdowns");
 const sitdownNotesPath = v2("sitdown-notes");
@@ -50,7 +50,9 @@ export async function listSitdownNotes(
     orderDir?: string | undefined;
   },
 ): Promise<SitdownNote[]> {
-  return sitdownNoteListSchema.parse(await callApi(sitdownNotesPath, { query: options }));
+  const query = { ...options, withDeleted: flagParameter(options.withDeleted) };
+
+  return sitdownNoteListSchema.parse(await callApi(sitdownNotesPath, { query }));
 }
 
 export async function createSitdownNote(options: {

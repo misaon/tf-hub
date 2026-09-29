@@ -75,12 +75,17 @@ export const goalsDomain: RegistryEntry = defineDomain({
         toDate: dateField("Only goals created on or before this date (YYYY-MM-DD).").default(allTimeToDate),
       }),
       async run({ mine, collaboratorUuid, ...rest }) {
-        return listGoals({ ...rest, collaboratorUuid: await resolveCollaboratorScope({ mine, collaboratorUuid }) });
+        const goals = await listGoals({
+          ...rest,
+          collaboratorUuid: await resolveCollaboratorScope({ mine, collaboratorUuid }),
+        });
+
+        return goals.map((goal) => Object.assign(goal, { message: plainText(goal.message) }));
       },
       render: tableRenderer<Goal>([
         ...goalIdentityColumns,
         ["Done", (goal) => formatValue(goal.done ?? false)],
-        ["Goal", (goal) => ellipsize(plainText(goal.message), 50)],
+        ["Goal", (goal) => ellipsize(goal.message, 50)],
       ]),
     }),
     defineAction({
@@ -154,7 +159,9 @@ export const visionDomain: RegistryEntry = defineDomain({
         collaboratorUuid: uuidField("UUID of the collaborator; defaults to the signed-in user.").optional(),
       }),
       async run({ collaboratorUuid }) {
-        return getVision({ collaboratorUuid: collaboratorUuid ?? (await getCurrentCollaboratorUuid()) });
+        const vision = await getVision({ collaboratorUuid: collaboratorUuid ?? (await getCurrentCollaboratorUuid()) });
+
+        return { ...vision, message: plainText(vision.message) };
       },
       render: visionDetails,
     }),

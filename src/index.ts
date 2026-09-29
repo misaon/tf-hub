@@ -3,6 +3,7 @@ import { defineCommand, runMain } from "citty";
 
 import packageJson from "../package.json" with { type: "json" };
 import { notifyOnUpdate } from "./cli/update-notifier.ts";
+import { showUsage } from "./cli/usage.ts";
 import { loginCommand } from "./commands/login.ts";
 import { logoutCommand } from "./commands/logout.ts";
 import { mcpServerCommand } from "./commands/mcp-server.ts";
@@ -16,8 +17,8 @@ const main = defineCommand({
     description:
       "Command-line client for the TF Hub API. Run `tf-hub login` once to sign in with Google; " +
       "the session is stored locally and refreshed automatically. Commands are grouped by domain — " +
-      "run `tf-hub <command> --help` to list its actions. Add `--json` to any data command " +
-      "for machine-readable output.",
+      "run `tf-hub <command> --help` to list its actions and `tf-hub <command> <action> --help` for the " +
+      "full description. Add `--json` to any data command for machine-readable output.",
   },
   subCommands: {
     login: loginCommand,
@@ -31,5 +32,5 @@ const main = defineCommand({
 // Started before the command so the network check overlaps with real work; prints only after.
 const updateNotice = notifyOnUpdate(packageJson.name, packageJson.version);
 
-await runMain(main);
+await runMain(main, { showUsage });
 await updateNotice;

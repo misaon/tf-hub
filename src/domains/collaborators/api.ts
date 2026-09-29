@@ -3,7 +3,7 @@ import { z } from "zod";
 import { callApi } from "../../api/client.ts";
 import { zCollaboratorLabelDto, zCollaboratorsDto } from "../../api/generated/zod.gen.ts";
 import { v3 } from "../../api/paths.ts";
-import type { Paging } from "../shared.ts";
+import { flagParameter, type Paging } from "../shared.ts";
 
 const collaboratorsPath = v3("collaborators");
 
@@ -50,6 +50,19 @@ export function omitBio(collaborator: Collaborator): Omit<Collaborator, "bioText
   return rest;
 }
 
+type Position = NonNullable<Collaborator["positions"]>[number];
+
+function omitPermissions(position: Position): Omit<Position, "permissions"> {
+  const { permissions, ...rest } = position;
+  void permissions;
+
+  return rest;
+}
+
+export function omitPositionPermissions(collaborator: Collaborator): Collaborator {
+  return { ...collaborator, positions: collaborator.positions?.map((position) => omitPermissions(position)) };
+}
+
 export async function listPublicCollaborators({ limit, offset }: Paging): Promise<Collaborator[]> {
   return collaboratorListSchema.parse(await callApi(`${collaboratorsPath}/public`, { query: { limit, offset } }));
 }
@@ -69,7 +82,9 @@ export async function listCollaborators(
     workEndMaxDaysOld?: number | undefined;
   },
 ): Promise<Collaborator[]> {
-  return collaboratorListSchema.parse(await callApi(collaboratorsPath, { query: options }));
+  const query = { ...options, onlyWithWorkingTimeRecords: flagParameter(options.onlyWithWorkingTimeRecords) };
+
+  return collaboratorListSchema.parse(await callApi(collaboratorsPath, { query }));
 }
 
 export async function listCollaboratorLabels(): Promise<{ name?: string | null | undefined }[]> {

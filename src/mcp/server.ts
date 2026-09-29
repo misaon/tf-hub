@@ -5,21 +5,24 @@ import { createConsola } from "consola";
 
 import packageJson from "../../package.json" with { type: "json" };
 import { selectOperations, type OperationFilter } from "../domains/index.ts";
+import { runOperation } from "../domains/operation.ts";
 
 export const mcpConsola = createConsola({ stdout: process.stderr, stderr: process.stderr });
 
 const serverInstructions =
-  "TF Hub is the company intranet: people directory (colleagues, collaborators), documents for digital " +
-  "signing, The Game (XP gamification), office absences with an approval flow, worklogs (project time " +
-  "tracking), working-time records (legal attendance), projects with sitdown meetings (health ratings, " +
-  "goals, notes), personal goals & visions with AI validation (validate-*), 1on1s, feedbacks, manager " +
-  "notes (collaborator-notes), substitute groups, positions and settings. Most tools are named " +
-  "<domain>-<action> (e.g. worklogs-list, absences-create); the standalone ones are me, whoami, " +
-  "permissions, cost-categories, enums and merch-request. Start with list/show tools to discover records; " +
-  "collaborators are referenced by UUID (find them via colleagues-list or collaborators-list) and some " +
-  "admin records by numeric ID. Months use the YYYY-MM format, dates YYYY-MM-DD. Update tools persist " +
-  "every field as given — read the current record first. The signed-in user's own identity is available " +
-  "via `me`.";
+  "TF Hub is the company intranet: people directory, documents to sign, The Game (XP gamification), office " +
+  "absences, worklogs (project time tracking), working-time records (legal attendance), projects and sitdowns, " +
+  "goals and visions, 1on1s, feedbacks, manager notes, substitute groups, positions and settings. Tools are " +
+  "named <domain>-<action>; me, whoami, permissions, cost-categories, enums and merch-request stand alone.\n" +
+  "- Identity: `me` returns your uuid (how people are referenced) and numeric id (worklogs, bonus XP).\n" +
+  "- Scope: list tools with a `mine` parameter read everyone visible to you unless mine=true. For anything " +
+  'about "my …" pass mine=true — other people\'s records usually need extra permissions.\n' +
+  "- Size: lists return at most `limit` records (default 999). When more exist, the result opens with a note " +
+  "giving the total and the next offset; narrow the filters (dates, person, project) rather than paging.\n" +
+  "- Formats: dates YYYY-MM-DD, months YYYY-MM, worklog timeSpent in minutes, absence hours with 8 per working " +
+  "day. Rich text (notes, messages, document content) comes back as plain text.\n" +
+  "- Writes: update tools store every field they take as given — read the record first and pass the current " +
+  "values of fields you keep.";
 
 function toolTitle(name: string): string {
   const spaced = name.replaceAll("-", " ");
@@ -47,9 +50,10 @@ export function createMcpServer(filter: OperationFilter = {}): McpServer {
       },
       // The SDK already parsed and transformed the arguments; a second parse would reject them.
       async (input) => {
-        const data = await operation.run(input);
+        const { data, notices } = await runOperation(operation, input);
 
-        return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+        // Notices lead: a client that truncates a long result must still learn that records are missing.
+        return { content: [...notices, JSON.stringify(data)].map((text) => ({ type: "text" as const, text })) };
       },
     );
   }

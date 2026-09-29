@@ -70,11 +70,15 @@ export const collaboratorNotesDomain: RegistryEntry = defineDomain({
         dateFrom: dateField("Only notes created on or after this date (YYYY-MM-DD).").optional(),
         dateTo: dateField("Only notes created on or before this date (YYYY-MM-DD).").optional(),
       }),
-      run: (input) => listCollaboratorNotes(input),
+      async run(input) {
+        const notes = await listCollaboratorNotes(input);
+
+        return notes.map((note) => Object.assign(note, { note: plainText(note.note) }));
+      },
       render: tableRenderer<CollaboratorNote>([
         ["Date", (note) => formatDate(note.createdAt)],
         ["Collaborator", (note) => formatName(note.collaborator)],
-        ["Note", (note) => ellipsize(plainText(note.note), 60)],
+        ["Note", (note) => ellipsize(note.note, 60)],
         ["UUID", (note) => formatValue(note.uuid)],
       ]),
     }),
