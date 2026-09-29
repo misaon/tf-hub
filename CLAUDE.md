@@ -10,5 +10,5 @@ Rules for AI assistants working in this repository:
 - Before reporting work as done, all gates must pass: `bun run lint`, `bun run fmt:check`, `bun run knip`,
   `bun run typecheck`, `bun test`.
 - Do not add code comments (see the comments policy in AGENTS.md) and do not name the company anywhere.
-- Never edit `src/api/generated/` by hand — change `scripts/update-openapi.ts` or the server and rerun
-  `bun run generate`.
+- Never edit `src/api/generated/` by hand — change `scripts/openapi-normalization.ts` or the server and
+  rerun `bun run generate`.

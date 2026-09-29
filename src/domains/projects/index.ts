@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import {
   detailsRenderer,
-  formatName,
   formatValue,
   printJson,
   printSuccess,
@@ -24,10 +23,8 @@ import {
   fetchSonarCloudMetrics,
   getProjectReport,
   getSonarCloudMetrics,
-  listProjectLeaderHistory,
   listProjects,
   updateProject,
-  updateProjectLeader,
   updateProjectReport,
   updateProjectReportNoteSchema,
   type Project,
@@ -38,7 +35,6 @@ const projectColumns: ColumnSpec<Project>[] = [
   ["Name", (project) => formatValue(project.name)],
   ["Abbreviation", (project) => formatValue(project.abbreviation)],
   ["Active", (project) => formatValue(project.isActive)],
-  ["Leader", (project) => formatName(project.leader)],
   ["Sitdown", (project) => formatValue(project.sitdownTime?.name)],
   ["UUID", (project) => formatValue(project.uuid)],
 ];
@@ -51,13 +47,13 @@ const projectDetails = detailsRenderer<Project>([
 
 export const projectsDomain: RegistryEntry = defineDomain({
   name: "projects",
-  description: "Company projects: configuration, leaders, reports.",
+  description: "Company projects: configuration and reports.",
   actions: [
     defineAction({
       action: "list",
       description:
-        "List company projects (synced from TF-ERP): name, abbreviation, leader, Slack channel, sitdown time " +
-        "slot and aggregated SonarCloud quality metrics.",
+        "List company projects (synced from TF-ERP): name, abbreviation, Slack channel, sitdown time slot and " +
+        "aggregated SonarCloud quality metrics.",
       input: z.object({ limit: limitField, offset: offsetField }),
       run: (input) => listProjects(input),
       render: tableRenderer(projectColumns),
@@ -84,32 +80,6 @@ export const projectsDomain: RegistryEntry = defineDomain({
       render: projectDetails,
     }),
     defineAction({
-      action: "set-leader",
-      description:
-        "Assign a new project leader (team lead). The leadership starts from the given month (project management).",
-      input: z.object({
-        id: idField("Numeric ID of the project."),
-        leaderId: idField("Numeric ID of the collaborator who becomes the leader."),
-        fromMonth: z.coerce.number().int().min(1).max(12).describe("Month the leadership starts (1-12)."),
-        fromYear: z.coerce.number().int().min(2000).max(2200).describe("Year the leadership starts, e.g. 2026."),
-      }),
-      positionals: ["id", "leaderId"],
-      run: (input) => updateProjectLeader(input),
-      render: projectDetails,
-    }),
-    defineAction({
-      action: "leader-history",
-      description: "Show the history of project leadership: who led which project and when.",
-      input: z.object({}),
-      run: () => listProjectLeaderHistory(),
-      render: tableRenderer([
-        ["Project", (entry) => formatName(entry.project)],
-        ["Leader", (entry) => formatName(entry.leader)],
-        ["From", (entry) => `${entry.fromYear ?? "?"}-${entry.fromMonth ?? "?"}`],
-        ["To", (entry) => (typeof entry.toYear === "number" ? `${entry.toYear}-${entry.toMonth ?? "?"}` : "now")],
-      ]),
-    }),
-    defineAction({
       action: "report",
       description:
         "Show the sitdown report of a project for a date: report title, current and previous goals and " +
@@ -134,11 +104,11 @@ export const projectsDomain: RegistryEntry = defineDomain({
         unresolvedPoints: z.string().describe("Summary of unresolved points.").optional(),
         currentNote: jsonField(
           updateProjectReportNoteSchema,
-          'Current goal note as JSON: {"id":1,"text":"...","deadline":"YYYY-MM-DD"}.',
+          'Current goal note, e.g. {"id":1,"text":"...","deadline":"YYYY-MM-DD"}.',
         ).optional(),
         previousNote: jsonField(
           updateProjectReportNoteSchema,
-          'Previous goal note as JSON: {"id":1,"text":"...","deadline":"YYYY-MM-DD"}.',
+          'Previous goal note, e.g. {"id":1,"text":"...","deadline":"YYYY-MM-DD"}.',
         ).optional(),
       }),
       positionals: ["uuid", "date"],
