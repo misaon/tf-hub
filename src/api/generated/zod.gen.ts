@@ -3,7 +3,6 @@
 import * as z from 'zod';
 
 export const zNameIdDto = z.object({
-    _selfUrl: z.string().nullish(),
     id: z.number().nullish(),
     name: z.string().nullish()
 });
@@ -16,15 +15,16 @@ export const zSettingsDto = z.object({
     slackSchedulerChannel: z.string().nullish(),
     maxWorklogHours: z.number().nullish(),
     merchEmailReceiver: z.string().nullish(),
-    merchProducts: z.string().nullish()
+    merchProducts: z.string().nullish(),
+    absenceAdvanceLong: z.number().nullish(),
+    absenceAdvanceShort: z.number().nullish(),
+    absenceLongThresholdWorkingDays: z.number().nullish(),
+    absenceHomeOfficeWeeklyCap: z.number().nullish(),
+    absenceExcludedTypes: z.array(z.string()).nullish()
 });
 
 export const zRunFixturesResponseDto = z.object({
     message: z.string().nullish()
-});
-
-export const zSettingsMetabaseDashboardTokenDto = z.object({
-    token: z.string().nullish()
 });
 
 export const zUpdateSettingsDto = z.object({
@@ -56,6 +56,15 @@ export const zOkManyResponse = z.object({
 export const zOkOneResponse = z.object({
     message: z.string().nullish()
 });
+
+/**
+ * Game league associated with this position
+ */
+export const zGameLeagues = z.enum([
+    'DEV',
+    'TL',
+    'QA'
+]);
 
 export const zPermissionsDto = z.object({
     id: z.number().nullish(),
@@ -97,7 +106,6 @@ export const zMinimalCollaboratorDto = z.object({
     uuid: z.string().nullish(),
     firstName: z.string().nullish(),
     lastName: z.string().nullish(),
-    slackAvatarUrl: z.string().nullish(),
     isActive: z.boolean().nullish()
 });
 
@@ -108,6 +116,15 @@ export const zCurrentGameStateDto = z.object({
     experienceDifference: z.number().nullish()
 });
 
+/**
+ * Legal contract type of the collaborator (HPP, DPP, ZL). Null when not set.
+ */
+export const zUserLegalType = z.enum([
+    'HPP',
+    'DPP',
+    'ZL'
+]);
+
 export const zCollaboratorsDto = z.object({
     id: z.number().nullish(),
     uuid: z.string().nullish(),
@@ -117,7 +134,6 @@ export const zCollaboratorsDto = z.object({
     isActive: z.boolean().nullish(),
     isPublic: z.boolean().nullish(),
     bioText: z.string().nullish(),
-    slackAvatarUrl: z.string().nullish(),
     positions: z.array(zPositionsDto).nullish(),
     primaryOfficeAbsenceApprover: zMinimalCollaboratorDto.nullish(),
     currentGameState: zCurrentGameStateDto.nullish(),
@@ -127,7 +143,8 @@ export const zCollaboratorsDto = z.object({
     notifyResponsiblePersonAboutBirthday: z.boolean().nullish(),
     positionOverride: z.string().nullish(),
     labels: z.array(z.string()).nullish(),
-    subordinateCollaborators: z.array(zMinimalCollaboratorDto).nullish()
+    subordinateCollaborators: z.array(zMinimalCollaboratorDto).nullish(),
+    legalType: z.string().nullish()
 });
 
 export const zSkillsDto = z.object({
@@ -219,11 +236,20 @@ export const zUpdateCollaboratorGoalDto = z.object({
 });
 
 export const zNameUuidIdDto = z.object({
-    _selfUrl: z.string().nullish(),
     id: z.number().nullish(),
     uuid: z.string().nullish(),
     name: z.string().nullish()
 });
+
+/**
+ * Rating value of the feedback
+ */
+export const zCollaboratorFeedbackValue = z.enum([
+    'BAD',
+    'GOOD',
+    'GREAT',
+    'NONE'
+]);
 
 export const zCollaboratorFeedbackDto = z.object({
     id: z.number().nullish(),
@@ -235,13 +261,17 @@ export const zCollaboratorFeedbackDto = z.object({
 
 export const zCreateCollaboratorFeedbacksDto = z.object({
     token: z.string(),
-    value: z.enum([
-        'BAD',
-        'GOOD',
-        'GREAT',
-        'NONE'
-    ]).optional()
+    value: zCollaboratorFeedbackValue.optional()
 });
+
+/**
+ * Rating given by the collaborator
+ */
+export const zCollaborator1On1Rating = z.enum([
+    'BAD',
+    'OK',
+    'GREAT'
+]);
 
 export const zCollaborator1On1Dto = z.object({
     uuid: z.string().nullish(),
@@ -258,11 +288,7 @@ export const zCollaborator1On1Dto = z.object({
 export const zCreateCollaborator1On1Dto = z.object({
     message: z.string(),
     collaboratorRating: z.string().nullish(),
-    companyRating: z.enum([
-        'BAD',
-        'OK',
-        'GREAT'
-    ]),
+    companyRating: zCollaborator1On1Rating,
     isFinancialMessage: z.boolean(),
     collaboratorUuid: z.uuid(),
     date: z.string()
@@ -271,11 +297,7 @@ export const zCreateCollaborator1On1Dto = z.object({
 export const zUpdateCollaborator1On1Dto = z.object({
     message: z.string(),
     collaboratorRating: z.string().nullish(),
-    companyRating: z.enum([
-        'BAD',
-        'OK',
-        'GREAT'
-    ]),
+    companyRating: zCollaborator1On1Rating,
     isFinancialMessage: z.boolean()
 });
 
@@ -338,23 +360,12 @@ export const zProjectsDto = z.object({
     sonarCloudApiKey: z.string().nullish(),
     isActive: z.boolean().nullish(),
     sonarCloudProjects: z.array(zSonarCloudProjectDto).nullish(),
-    leader: zNameIdDto.nullish(),
     slackChannel: zSlackChannelDto.nullish(),
     sitdownTime: zSitdownsTimesDto.nullish(),
     showInSitdowns: z.boolean().nullish(),
     createdAt: z.string().nullish(),
     updatedAt: z.string().nullish(),
     aggregatedMetrics: zSonarCloudMetricAggregatedDto.nullish()
-});
-
-export const zProjectLeadersHistoryDto = z.object({
-    id: z.number().nullish(),
-    leader: zNameIdDto.nullish(),
-    project: zNameIdDto.nullish(),
-    fromMonth: z.number().nullish(),
-    fromYear: z.number().nullish(),
-    toMonth: z.number().nullish(),
-    toYear: z.number().nullish()
 });
 
 export const zUpdateProjectsDto = z.object({
@@ -369,6 +380,15 @@ export const zSitdownsDto = z.object({
     id: z.number().nullish(),
     date: z.string().nullish()
 });
+
+/**
+ * Rating of how well goals were met
+ */
+export const zSitdownRatingEnum = z.enum([
+    'FAIL',
+    'OK',
+    'GOOD'
+]);
 
 export const zSitdownsRatingsDto = z.object({
     id: z.number().nullish(),
@@ -402,12 +422,6 @@ export const zProjectReportDto = z.object({
     sitdownRating: zSitdownsRatingsDto.nullish(),
     currentNote: zProjectReportNoteDto.nullish(),
     prevNote: zProjectReportNoteDto.nullish()
-});
-
-export const zUpdateProjectLeaderDto = z.object({
-    leaderId: z.number(),
-    fromMonth: z.number(),
-    fromYear: z.number()
 });
 
 export const zUpdateProjectReportNoteDto = z.object({
@@ -472,6 +486,11 @@ export const zSitdownNotesDto = z.object({
     deletedAt: z.string().nullish()
 });
 
+/**
+ * Direction of ordering (ASC or DESC)
+ */
+export const zSortDir = z.enum(['ASC', 'DESC']);
+
 export const zSitdownNotesSearchQuery = z.object({
     limit: z.number().nullish(),
     offset: z.number().nullish(),
@@ -520,6 +539,16 @@ export const zCreateSitdownsRatingsDto = z.object({
     coverage: z.number().nullable()
 });
 
+/**
+ * Current state of the document
+ */
+export const zDocumentState = z.enum([
+    'SIGNED',
+    'REJECTED',
+    'WAITING_FOR_SIGN',
+    'CANCELED'
+]);
+
 export const zDocumentDto = z.object({
     uuid: z.string().nullish(),
     title: z.string().nullish(),
@@ -537,47 +566,48 @@ export const zCreateDocumentDto = z.object({
     sentAt: z.string(),
     content: z.string(),
     title: z.string(),
-    documentState: z.enum([
-        'SIGNED',
-        'REJECTED',
-        'WAITING_FOR_SIGN',
-        'CANCELED'
-    ])
+    documentState: zDocumentState
 });
 
 export const zUpdateDocumentDto = z.object({
     content: z.string(),
     title: z.string(),
-    documentState: z.enum([
-        'SIGNED',
-        'REJECTED',
-        'WAITING_FOR_SIGN',
-        'CANCELED'
-    ])
+    documentState: zDocumentState
 });
 
+/**
+ * List of available office absence types
+ */
+export const zOfficeAbsenceType = z.enum([
+    'HOME_OFFICE',
+    'HOLIDAY',
+    'WORK_TRAVEL',
+    'ILLNESS',
+    'INACCESSIBILITY'
+]);
+
+/**
+ * List of available office absence states
+ */
+export const zOfficeAbsenceState = z.enum([
+    'APPROVED',
+    'REJECTED',
+    'AWAITING_CANCELLATION_APPROVAL',
+    'DONE',
+    'CANCELED',
+    'WAITING_FOR_APPROVAL'
+]);
+
+/**
+ * List of available bonus XP donor types
+ */
+export const zBonusXpDonorType = z.enum(['SYSTEM', 'USER']);
+
 export const zEnumsDto = z.object({
-    officeAbsenceTypes: z.array(z.enum([
-        'HOME_OFFICE',
-        'HOLIDAY',
-        'WORK_TRAVEL',
-        'ILLNESS',
-        'INACCESSIBILITY'
-    ])).nullish(),
-    officeAbsenceStates: z.array(z.enum([
-        'APPROVED',
-        'REJECTED',
-        'AWAITING_CANCELLATION_APPROVAL',
-        'DONE',
-        'CANCELED',
-        'WAITING_FOR_APPROVAL'
-    ])).nullish(),
-    gameLeagues: z.array(z.enum([
-        'DEV',
-        'TL',
-        'QA'
-    ])).nullish(),
-    bonusXpDonorTypes: z.array(z.enum(['SYSTEM', 'USER'])).nullish()
+    officeAbsenceTypes: z.array(z.string()).nullish(),
+    officeAbsenceStates: z.array(z.string()).nullish(),
+    gameLeagues: z.array(z.string()).nullish(),
+    bonusXpDonorTypes: z.array(z.string()).nullish()
 });
 
 export const zExampleDto = z.object({
@@ -608,7 +638,6 @@ export const zShortCollaboratorsDto = z.object({
     lastName: z.string().nullish(),
     email: z.string().nullish(),
     type: z.string().nullish(),
-    slackAvatarUrl: z.string().nullish(),
     positionsGameLeague: z.array(zPositionLeagueDto).nullish()
 });
 
@@ -631,10 +660,8 @@ export const zProjectsExperiencesDto = z.object({
     sumExperience: z.number().nullish(),
     sumWorkedHoursPerProject: z.number().nullish(),
     fullTimeJobCoefficient: z.number().nullish(),
-    playerCoefficient: z.number().nullish(),
     project: zNameIdDto.nullish(),
-    sitdownsRatingExperience: z.array(zSitdownsRatingsExperienceDto).nullish(),
-    playerType: z.string().nullish()
+    sitdownsRatingExperience: z.array(zSitdownsRatingsExperienceDto).nullish()
 });
 
 export const zMonthCollaboratorGameStateDto = z.object({
@@ -654,7 +681,6 @@ export const zMonthGameStateDto = z.object({
 export const zBonusXpCollaboratorsDto = z.object({
     id: z.number().nullish(),
     userName: z.string().nullish(),
-    slackAvatarUrl: z.string().nullish(),
     value: z.number().nullish()
 });
 
@@ -703,7 +729,9 @@ export const zOfficeAbsencesDto = z.object({
     approver: zMinimalCollaboratorDto.nullish(),
     type: z.string().nullish(),
     state: z.string().nullish(),
-    createdAt: z.string().nullish()
+    createdAt: z.string().nullish(),
+    lateRequestMissingDays: z.number().nullish(),
+    isLateRequest: z.boolean().nullish()
 });
 
 export const zOfficeAbsencesStatisticsDto = z.object({
@@ -736,13 +764,7 @@ export const zCreateOfficeAbsencesDto = z.object({
     generalDescription: z.string(),
     collaboratorUuid: z.string(),
     approverUuid: z.string(),
-    type: z.enum([
-        'HOME_OFFICE',
-        'HOLIDAY',
-        'WORK_TRAVEL',
-        'ILLNESS',
-        'INACCESSIBILITY'
-    ])
+    type: zOfficeAbsenceType
 });
 
 export const zCreateUpdatedMessagesDto = z.object({
@@ -752,14 +774,7 @@ export const zCreateUpdatedMessagesDto = z.object({
 });
 
 export const zUpdateOfficeAbsencesDto = z.object({
-    state: z.enum([
-        'APPROVED',
-        'REJECTED',
-        'AWAITING_CANCELLATION_APPROVAL',
-        'DONE',
-        'CANCELED',
-        'WAITING_FOR_APPROVAL'
-    ]),
+    state: zOfficeAbsenceState,
     approverDescription: z.string().optional(),
     generalDescription: z.string().optional(),
     token: z.string()
@@ -779,6 +794,29 @@ export const zCreateSubstituteGroupDto = z.object({
 export const zCreateTestNotificationDto = z.object({
     message: z.string()
 });
+
+/**
+ * Current state of the record item
+ */
+export const zWorkingTimeRecordState = z.enum([
+    'WAITING_FOR_CONFIRMATION',
+    'WAITING_FOR_CLOSURE',
+    'CLOSED',
+    'RETURNED'
+]);
+
+/**
+ * Type of the working time record
+ */
+export const zWorkingTimeRecordType = z.enum([
+    'VACATION_480',
+    'VACATION_240',
+    'NATIONAL_HOLIDAY',
+    'ILLNESS',
+    'UNPAID_TIME_OFF',
+    'INACCESSIBILITY',
+    'WORK'
+]);
 
 export const zWorkingTimeRecordWorkItemDto = z.object({
     id: z.number().nullish(),
@@ -829,15 +867,7 @@ export const zWorkingTimeRecordSummaryDto = z.object({
 });
 
 export const zUpdateWorkingTimeRecordWorkItemDto = z.object({
-    type: z.enum([
-        'VACATION_480',
-        'VACATION_240',
-        'NATIONAL_HOLIDAY',
-        'ILLNESS',
-        'UNPAID_TIME_OFF',
-        'INACCESSIBILITY',
-        'WORK'
-    ]),
+    type: zWorkingTimeRecordType,
     workStart: z.string(),
     workEnd: z.string()
 });
@@ -848,23 +878,13 @@ export const zUpdateWorkingTimeRecordDateItemDto = z.object({
 });
 
 export const zUpdateWorkingTimeRecordItemDto = z.object({
-    state: z.enum([
-        'WAITING_FOR_CONFIRMATION',
-        'WAITING_FOR_CLOSURE',
-        'CLOSED',
-        'RETURNED'
-    ]),
+    state: zWorkingTimeRecordState,
     note: z.string().optional(),
     dateItems: z.array(zUpdateWorkingTimeRecordDateItemDto)
 });
 
 export const zUpdateStatusWorkingTimeRecordItemDto = z.object({
-    state: z.enum([
-        'WAITING_FOR_CONFIRMATION',
-        'WAITING_FOR_CLOSURE',
-        'CLOSED',
-        'RETURNED'
-    ]),
+    state: zWorkingTimeRecordState,
     note: z.string()
 });
 

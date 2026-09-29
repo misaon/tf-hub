@@ -23,7 +23,6 @@ const readVerbs = new Set([
   "statistics",
   "summary",
   "labels",
-  "leader-history",
   "metrics",
   "category-sum",
   "year-stats",
