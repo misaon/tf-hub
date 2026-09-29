@@ -4,6 +4,24 @@ All notable changes are documented here. This file is maintained by
 [changelogen](https://github.com/unjs/changelogen) from
 [Conventional Commits](https://www.conventionalcommits.org).
 
+## v0.2.0
+
+[compare changes](https://github.com/misaon/tf-hub/compare/v0.1.3...v0.2.0)
+
+### 🚀 Enhancements
+
+- **projects:** ⚠️  Sync with the latest Hub API ([4c6b9a7](https://github.com/misaon/tf-hub/commit/4c6b9a7))
+- ⚠️  Lean, agent-ready output for MCP tools and the CLI ([e9edc9d](https://github.com/misaon/tf-hub/commit/e9edc9d))
+
+#### ⚠️ Breaking Changes
+
+- **projects:** ⚠️  Sync with the latest Hub API ([4c6b9a7](https://github.com/misaon/tf-hub/commit/4c6b9a7))
+- ⚠️  Lean, agent-ready output for MCP tools and the CLI ([e9edc9d](https://github.com/misaon/tf-hub/commit/e9edc9d))
+
+### ❤️ Contributors
+
+- Ondřej Misák <email@ondrejmisak.cz>
+
 ## v0.1.3
 
 [compare changes](https://github.com/misaon/tf-hub/compare/v0.1.2...v0.1.3)
