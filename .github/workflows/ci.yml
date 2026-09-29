@@ -29,7 +29,7 @@ jobs:
           key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
           restore-keys: ${{ runner.os }}-bun-
       - run: bun install --frozen-lockfile
-      - uses: crate-ci/typos@v1.50.2
+      - uses: crate-ci/typos@v1.50.3
       - run: bun run lint
       - run: bun run fmt:check
       - run: bun run knip
