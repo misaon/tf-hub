@@ -29,6 +29,8 @@
     "func-style": ["error", "declaration", { "allowArrowFunctions": true }],
     "typescript/method-signature-style": "off",
     "sort-keys": "off",
+    "one-var": "off",
+    "unicorn/max-nested-calls": "off",
     "no-magic-numbers": "off",
     "sort-imports": "off",
     "no-ternary": "off",
