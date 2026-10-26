@@ -109,6 +109,13 @@ export const absencesDomain: RegistryEntry = defineDomain({
         approverUuid: uuidField(
           "UUID of the approver. Defaults to the signed-in user's primary absence approver.",
         ).optional(),
+        weeklyLimitException: z
+          .boolean()
+          .default(false)
+          .describe(
+            "Ask for an exception from the weekly home office limit. Applies only to HOME_OFFICE requests over " +
+              "the limit and requires an approverDescription explaining why.",
+          ),
       }),
       async run({ collaboratorUuid, approverUuid, ...rest }) {
         let resolvedCollaboratorUuid = collaboratorUuid;

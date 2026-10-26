@@ -49,6 +49,7 @@ export async function createOfficeAbsence(options: {
   approverDescription: string;
   collaboratorUuid: string;
   approverUuid: string;
+  weeklyLimitException: boolean;
 }): Promise<OfficeAbsence> {
   return zOfficeAbsencesDto.parse(await callApi(absencesPath, { method: "POST", body: options }));
 }

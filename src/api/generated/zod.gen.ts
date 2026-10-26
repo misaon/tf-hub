@@ -731,7 +731,8 @@ export const zOfficeAbsencesDto = z.object({
     state: z.string().nullish(),
     createdAt: z.string().nullish(),
     lateRequestMissingDays: z.number().nullish(),
-    isLateRequest: z.boolean().nullish()
+    isLateRequest: z.boolean().nullish(),
+    isWeeklyLimitException: z.boolean().nullish()
 });
 
 export const zOfficeAbsencesStatisticsDto = z.object({
@@ -764,7 +765,8 @@ export const zCreateOfficeAbsencesDto = z.object({
     generalDescription: z.string(),
     collaboratorUuid: z.string(),
     approverUuid: z.string(),
-    type: zOfficeAbsenceType
+    type: zOfficeAbsenceType,
+    weeklyLimitException: z.boolean().optional()
 });
 
 export const zCreateUpdatedMessagesDto = z.object({
