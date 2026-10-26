@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, spyOn } from "bun:test";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { Client, InMemoryTransport } from "@modelcontextprotocol/client";
 import { z } from "zod";
 
 import { createMcpServer, mcpConsola } from "../src/mcp/server.ts";

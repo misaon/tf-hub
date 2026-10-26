@@ -1,6 +1,6 @@
 import { once } from "node:events";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { McpServer } from "@modelcontextprotocol/server";
+import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { createConsola } from "consola";
 
 import packageJson from "../../package.json" with { type: "json" };
@@ -45,7 +45,7 @@ export function createMcpServer(filter: OperationFilter = {}): McpServer {
       {
         title: toolTitle(operation.name),
         description: operation.description,
-        inputSchema: operation.input.shape,
+        inputSchema: operation.input,
         ...(operation.annotations ? { annotations: operation.annotations } : {}),
       },
       // The SDK already parsed and transformed the arguments; a second parse would reject them.
@@ -62,14 +62,11 @@ export function createMcpServer(filter: OperationFilter = {}): McpServer {
 }
 
 export async function startMcpServer(filter: OperationFilter = {}): Promise<void> {
-  const server = createMcpServer(filter);
-  const transport = new StdioServerTransport();
-  const { promise: transportClosed, resolve: markTransportClosed } = Promise.withResolvers<void>();
-  transport.onclose = markTransportClosed;
-
-  await server.connect(transport);
+  const connection = serveStdio(() => createMcpServer(filter), {
+    onerror: (error) => mcpConsola.error(error),
+  });
 
   // Per the MCP lifecycle, the client shuts the server down by closing stdin.
-  await Promise.race([once(process.stdin, "end"), transportClosed]);
-  await server.close();
+  await once(process.stdin, "end");
+  await connection.close();
 }
