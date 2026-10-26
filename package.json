@@ -47,25 +47,25 @@
     "prepublishOnly": "bun run build"
   },
   "devDependencies": {
-    "@commitlint/cli": "^21.2.3",
-    "@commitlint/config-conventional": "^21.2.3",
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "@hey-api/openapi-ts": "^0.99.0",
-    "@modelcontextprotocol/sdk": "^1.31.0",
-    "@types/bun": "^1.4.2",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@types/bun": "^1.4.4",
     "@typescript/native": "npm:typescript@^7.0.2",
     "automd": "^0.4.3",
     "changelogen": "^0.6.2",
     "citty": "^0.2.2",
     "consola": "^3.4.2",
-    "h3": "^2.0.1-rc.32",
+    "h3": "^2.0.8",
     "husky": "^9.1.7",
-    "knip": "^6.38.0",
+    "knip": "^6.43.0",
     "ofetch": "^1.5.1",
     "open": "^11.0.4",
     "oxfmt": "^0.74.0",
-    "oxlint": "^1.86.0",
+    "oxlint": "^1.89.0",
     "typescript": "npm:@typescript/typescript6@^6.0.2",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "engines": {
     "bun": ">=1.2.21",
