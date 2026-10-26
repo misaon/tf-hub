@@ -4,6 +4,19 @@ All notable changes are documented here. This file is maintained by
 [changelogen](https://github.com/unjs/changelogen) from
 [Conventional Commits](https://www.conventionalcommits.org).
 
+## v0.2.1
+
+[compare changes](https://github.com/misaon/tf-hub/compare/v0.2.0...v0.2.1)
+
+### 🚀 Enhancements
+
+- **mcp:** Migrate to the MCP TypeScript SDK v2 ([760b485](https://github.com/misaon/tf-hub/commit/760b485))
+- **absences:** Request an exception from the weekly home office limit ([096c8ad](https://github.com/misaon/tf-hub/commit/096c8ad))
+
+### ❤️ Contributors
+
+- Ondřej Misák ([@misaon](https://github.com/misaon))
+
 ## v0.2.0
 
 [compare changes](https://github.com/misaon/tf-hub/compare/v0.1.3...v0.2.0)
