@@ -5,6 +5,7 @@ import {
   commaSeparatedNumbersField,
   commaSeparatedStringsField,
   explicitBooleanField,
+  idField,
   jsonField,
   monthField,
   uuidField,
@@ -21,6 +22,17 @@ describe("monthField", () => {
   it("rejects invalid months", () => {
     expect(() => monthField("m").parse("2026-13")).toThrow();
     expect(() => monthField("m").parse("nope")).toThrow();
+  });
+});
+
+describe("idField", () => {
+  it("accepts the number MCP clients send and the string a CLI flag carries", () => {
+    expect(idField("id").parse(42)).toBe(42);
+    expect(idField("id").parse("42")).toBe(42);
+  });
+
+  it.each([[true], [[42]], [""], ["4x"], [0]])("never coerces %p into an ID", (value) => {
+    expect(idField("id").safeParse(value).success).toBe(false);
   });
 });
 

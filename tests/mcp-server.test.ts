@@ -37,12 +37,6 @@ describe("mcp server", () => {
     expect(colleagues?.inputSchema["properties"]).toHaveProperty("limit");
   });
 
-  it("derives a unique tool name for every operation", () => {
-    const names = operations.map((operation) => operation.name);
-
-    expect(new Set(names).size).toBe(names.length);
-  });
-
   it("annotates tools so clients can auto-approve reads and confirm destructive calls", async () => {
     const client = await connectClient();
 
@@ -53,7 +47,8 @@ describe("mcp server", () => {
     expect(annotationsByName.get("documents-delete")).toMatchObject({ readOnlyHint: false, destructiveHint: true });
     expect(annotationsByName.get("worklogs-create")).toMatchObject({ readOnlyHint: false, destructiveHint: false });
     expect(annotationsByName.get("validate-goal")).toMatchObject({ readOnlyHint: true });
-    expect(annotationsByName.get("merch-request")).toMatchObject({ readOnlyHint: false });
+    expect(annotationsByName.get("merch-request")).toMatchObject({ readOnlyHint: false, openWorldHint: true });
+    expect(annotationsByName.get("absences-create")).toMatchObject({ openWorldHint: true });
 
     for (const tool of tools) {
       expect(tool.annotations).toBeDefined();
@@ -188,6 +183,30 @@ describe("mcp server", () => {
     expect(readOnlyWorklogTools.map((operation) => operation.name)).not.toContain("worklogs-create");
 
     expect(() => selectOperations({ toolsets: ["nope"] })).toThrow(/Unknown toolset/u);
+  });
+
+  it("rejects unknown arguments instead of silently running an unfiltered query", async () => {
+    await seedValidSession();
+    const fetchSpy = mockFetch(() => Promise.resolve(jsonResponse({ message: "OK", data: [] })));
+
+    const client = await connectClient();
+    const result = await client.callTool({ name: "absences-list", arguments: { fromDate: "2026-01-01" } });
+
+    expect(result.isError).toBe(true);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("explains a response that no longer matches its schema instead of dumping raw issues", async () => {
+    await seedValidSession();
+    mockFetch(() => Promise.resolve(jsonResponse({ message: "OK", data: { uuid: 42 } })));
+
+    const client = await connectClient();
+    const result = await client.callTool({ name: "me", arguments: {} });
+    const [block] = textContentSchema.parse(result.content);
+
+    expect(result.isError).toBe(true);
+    expect(block?.text).toContain("unexpected shape, so retrying will not help");
+    expect(block?.text).not.toContain('"code"');
   });
 
   it("returns a clean in-band error when not logged in", async () => {

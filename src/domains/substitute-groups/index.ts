@@ -3,7 +3,14 @@ import { z } from "zod";
 import { callApi } from "../../api/client.ts";
 import { zSubstituteGroupDto } from "../../api/generated/zod.gen.ts";
 import { v3 } from "../../api/paths.ts";
-import { deletedRenderer, detailsRenderer, formatValue, tableRenderer, type ColumnSpec } from "../../cli/output.ts";
+import {
+  type ColumnSpec,
+  deletedRenderer,
+  detailsRenderer,
+  formatValue,
+  missingValue,
+  tableRenderer,
+} from "../../cli/output.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
 import { commaSeparatedNumbersField, idField } from "../fields.ts";
 
@@ -37,7 +44,7 @@ async function deleteSubstituteGroup(options: { id: number }): Promise<void> {
 const groupColumns: ColumnSpec<SubstituteGroup>[] = [
   ["ID", (group) => formatValue(group.id)],
   ["Name", (group) => formatValue(group.name)],
-  ["Members", (group) => formatValue((group.users ?? []).map((user) => user.name ?? "?").join(", "))],
+  ["Members", (group) => formatValue((group.users ?? []).map((user) => user.name ?? missingValue).join(", "))],
 ];
 
 const memberIdsField = commaSeparatedNumbersField(

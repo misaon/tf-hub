@@ -44,7 +44,6 @@ export async function createWorklog(options: {
   started: string;
   costCategoryId: number;
   projectUuid: string | null;
-  collaboratorId: number;
 }): Promise<Worklog> {
   return zWorklogsDto.parse(await callApi(worklogsPath, { method: "POST", body: options }));
 }

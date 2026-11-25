@@ -54,14 +54,14 @@ describe("login command", () => {
 });
 
 describe("error handling", () => {
-  it("rejects invalid input via consola and sets a non-zero exit code", async () => {
+  it("rejects invalid input via consola with the usage exit code", async () => {
     const error = spyOn(consola, "error").mockReturnValue(undefined);
 
     await runCommand(gameDomain.command, { rawArgs: ["show", "not-a-month"] });
     await runCommand(gameDomain.command, { rawArgs: ["show", "2026-13"] });
 
     expect(error).toHaveBeenCalledTimes(2);
-    expect(process.exitCode).toBe(1);
+    expect(process.exitCode).toBe(2);
   });
 });
 
@@ -73,6 +73,16 @@ describe("mcp-server command", () => {
 
     expect(error).toHaveBeenCalledWith(expect.stringContaining("Not logged in"));
     expect(process.exitCode).toBe(1);
+  });
+
+  it("refuses a mistyped filter flag instead of exposing every tool", async () => {
+    await seedValidSession();
+    const error = spyOn(consola, "error").mockReturnValue(undefined);
+
+    await runCommand(mcpServerCommand, { rawArgs: ["--readonly"] });
+
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("Unknown option --readonly."));
+    expect(process.exitCode).toBe(2);
   });
 });
 

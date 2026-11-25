@@ -3,9 +3,9 @@ import { z } from "zod";
 import { callApi } from "../../api/client.ts";
 import { zPositionsDto } from "../../api/generated/zod.gen.ts";
 import { v3 } from "../../api/paths.ts";
-import { detailsRenderer, formatValue, tableRenderer } from "../../cli/output.ts";
+import { detailsRenderer, formatValue, missingValue, tableRenderer } from "../../cli/output.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
-import { commaSeparatedNumbersField, idField, limitField, offsetField } from "../fields.ts";
+import { commaSeparatedNumbersField, idField, limitField, numberField, offsetField } from "../fields.ts";
 import type { Paging } from "../shared.ts";
 
 const positionsPath = v3("positions");
@@ -51,7 +51,7 @@ export const positionsDomain: RegistryEntry = defineDomain({
       input: z.object({
         id: idField("Numeric ID of the position (see `positions-list`)."),
         permissionsIds: commaSeparatedNumbersField("Comma-separated permission IDs to assign, e.g. 1,4,7."),
-        order: z.coerce.number().int().min(0).describe("Display order of the position."),
+        order: numberField(z.number().int().min(0)).describe("Display order of the position."),
       }),
       positionals: ["id"],
       run: (input) => updatePosition(input),
@@ -62,7 +62,7 @@ export const positionsDomain: RegistryEntry = defineDomain({
         [
           "Permissions",
           (position) =>
-            formatValue((position.permissions ?? []).map((permission) => permission.name ?? "?").join(", ")),
+            formatValue((position.permissions ?? []).map((permission) => permission.name ?? missingValue).join(", ")),
         ],
       ]),
     }),

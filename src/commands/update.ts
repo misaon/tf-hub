@@ -1,5 +1,4 @@
 import { spawn } from "node:child_process";
-import { once } from "node:events";
 import { consola } from "consola";
 
 import packageJson from "../../package.json" with { type: "json" };
@@ -42,13 +41,20 @@ export const updateCommand = defineCommand({
       return;
     }
 
-    const installCommand = updateInstallCommand(packageJson.name);
+    const [executable, ...commandArguments] = updateInstallCommand(packageJson.name);
 
-    consola.info(`Updating v${packageJson.version} → v${newerVersion} via \`${installCommand}\`…`);
+    consola.info(
+      `Updating v${packageJson.version} → v${newerVersion} via \`${[executable, ...commandArguments].join(" ")}\`…`,
+    );
 
-    const [command = "", ...commandArguments] = installCommand.split(" ");
-    const installer = spawn(command, commandArguments, { stdio: "inherit" });
-    const [exitCode] = (await once(installer, "exit")) as [number | null];
+    const { promise: installerExit, resolve: resolveExit, reject: rejectExit } = Promise.withResolvers<number | null>();
+
+    // Windows package managers are .cmd shims that only a shell can start; every argument is a constant.
+    spawn(executable, commandArguments, { stdio: "inherit", shell: process.platform === "win32" })
+      .once("exit", resolveExit)
+      .once("error", rejectExit);
+
+    const exitCode = await installerExit;
 
     if (exitCode !== 0) {
       throw new Error(`Update failed (exit code ${exitCode}).`);

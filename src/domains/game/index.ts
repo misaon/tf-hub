@@ -10,7 +10,7 @@ import {
   tableRenderer,
 } from "../../cli/output.ts";
 import { defineAction, defineDomain, type DomainAction, type RegistryEntry } from "../domain.ts";
-import { idField, monthField } from "../fields.ts";
+import { idField, monthField, numberField } from "../fields.ts";
 import {
   createBonusExperience,
   deleteBonusExperience,
@@ -88,7 +88,7 @@ export const gameDomain: RegistryEntry = defineDomain({
       input: z.object({
         month: monthField(),
         recipientId: idField("Numeric ID of the collaborator receiving the XP."),
-        value: z.coerce.number().int().min(1).describe("Amount of XP to donate (at least 1)."),
+        value: numberField(z.number().int().min(1)).describe("Amount of XP to donate (at least 1)."),
         description: z.string().min(1).describe("Why the collaborator deserves the bonus XP."),
         includeToHeroes: z
           .boolean()

@@ -5,15 +5,26 @@ import { defineCommand } from "../cli/command.ts";
 import { commandFromOperation, type OperationPresentation } from "../cli/operation-command.ts";
 import type { Operation, OperationAnnotations } from "./operation.ts";
 
-export interface DomainAction<Shape extends z.ZodRawShape = z.ZodRawShape, TOutput = unknown> {
-  action: string;
-  description: string;
-  input: z.ZodObject<Shape>;
-  annotations?: Partial<OperationAnnotations> | undefined;
-  run(input: z.output<z.ZodObject<Shape>>): Promise<TOutput>;
-  positionals?: readonly string[] | undefined;
-  render(data: TOutput): void;
-}
+export const readOnlyAnnotations: OperationAnnotations = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+};
+
+export const additiveAnnotations: OperationAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: false,
+};
+
+const destructiveAnnotations: OperationAnnotations = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  idempotentHint: true,
+  openWorldHint: false,
+};
 
 const readVerbs = new Set([
   "list",
@@ -32,24 +43,59 @@ const readVerbs = new Set([
 
 function deriveAnnotations(action: string): OperationAnnotations {
   if (readVerbs.has(action)) {
-    return { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false };
-  }
-
-  if (action === "delete" || action.endsWith("-delete")) {
-    return { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false };
+    return readOnlyAnnotations;
   }
 
   if (action === "create" || action === "fetch" || action.endsWith("-give")) {
-    return { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false };
+    return additiveAnnotations;
   }
 
-  return { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false };
+  return destructiveAnnotations;
 }
 
+export interface DomainActionDefinition<Shape extends z.ZodRawShape, TOutput> {
+  action: string;
+  description: string;
+  input: z.ZodObject<Shape>;
+  annotations?: Partial<OperationAnnotations> | undefined;
+  run: (input: z.output<z.ZodObject<Shape>>) => Promise<TOutput>;
+  positionals?: readonly (keyof Shape & string)[] | undefined;
+  render: (data: TOutput) => void;
+}
+
+interface DomainEntry {
+  operation: Operation;
+  command: CommandDef<ArgsDef>;
+}
+
+export interface DomainAction {
+  action: string;
+  bind(domainName: string): DomainEntry;
+}
+
+// Binds the input and output types here, so each action's render receives exactly what its run returns.
 export function defineAction<Shape extends z.ZodRawShape, TOutput>(
-  action: DomainAction<Shape, TOutput>,
-): DomainAction<Shape, TOutput> {
-  return action;
+  definition: DomainActionDefinition<Shape, TOutput>,
+): DomainAction {
+  return {
+    action: definition.action,
+    bind(domainName) {
+      const operation: Operation<Shape, TOutput> = {
+        name: `${domainName}-${definition.action}`,
+        description: definition.description,
+        input: definition.input,
+        annotations: { ...deriveAnnotations(definition.action), ...definition.annotations },
+        run: definition.run,
+      };
+      const command = commandFromOperation(operation, {
+        cliPath: `${domainName} ${definition.action}`,
+        positionals: definition.positionals,
+        render: definition.render,
+      });
+
+      return { operation, command };
+    },
+  };
 }
 
 export interface RegistryEntry {
@@ -63,55 +109,28 @@ export function defineDomain(definition: {
   description: string;
   actions: readonly DomainAction[];
 }): RegistryEntry {
-  const operations: Operation[] = [];
-  const subCommands: Record<string, CommandDef<ArgsDef>> = {};
-
-  for (const action of definition.actions) {
-    const operation: Operation = {
-      name: `${definition.name}-${action.action}`,
-      description: action.description,
-      input: action.input,
-      annotations: { ...deriveAnnotations(action.action), ...action.annotations },
-      run: (input) => action.run(input),
-    };
-
-    operations.push(operation);
-    subCommands[action.action] = commandFromOperation(operation, {
-      commandName: action.action,
-      positionals: action.positionals,
-      render: (data) => {
-        action.render(data);
-      },
-    });
-  }
+  const entries = definition.actions.map((action) => [action.action, action.bind(definition.name)] as const);
 
   return {
     name: definition.name,
-    operations,
+    operations: entries.map(([, entry]) => entry.operation),
     command: defineCommand({
       meta: { name: definition.name, description: definition.description },
-      subCommands,
+      subCommands: Object.fromEntries(entries.map(([action, entry]) => [action, entry.command])),
     }),
   };
 }
 
-const readOnlyAnnotations: OperationAnnotations = {
-  readOnlyHint: true,
-  destructiveHint: false,
-  idempotentHint: true,
-  openWorldHint: false,
-};
-
 export function standaloneEntry<Shape extends z.ZodRawShape, TOutput>(
   operation: Operation<Shape, TOutput>,
-  presentation: OperationPresentation<TOutput>,
-  annotations: OperationAnnotations = readOnlyAnnotations,
+  presentation: Omit<OperationPresentation<TOutput>, "cliPath">,
+  annotations: OperationAnnotations,
 ): RegistryEntry {
   const annotated = { ...operation, annotations };
 
   return {
     name: operation.name,
     operations: [annotated],
-    command: commandFromOperation(annotated, presentation),
+    command: commandFromOperation(annotated, { ...presentation, cliPath: operation.name }),
   };
 }

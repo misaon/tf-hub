@@ -29,16 +29,18 @@ npm install -g @misaon/tf-hub
 ```
 
 **Direct download** — grab the build for your platform from the
-[latest release](https://github.com/misaon/tf-hub/releases/latest), make it executable and put it on your `PATH`:
+[latest release](https://github.com/misaon/tf-hub/releases/latest), check that this repository's release
+workflow built it, make it executable and put it on your `PATH`:
 
 ```sh
 curl -fsSL -o tf-hub https://github.com/misaon/tf-hub/releases/latest/download/tf-hub-darwin-arm64
+gh attestation verify tf-hub --repo misaon/tf-hub
 chmod +x tf-hub && mv tf-hub /usr/local/bin/
 ```
 
 Builds are published for macOS (arm64, x64), Linux (x64, arm64) and Windows (x64), with a `SHA256SUMS`
-file next to them. macOS quarantines binaries downloaded through a browser — either use `curl` as above,
-or clear the flag with `xattr -d com.apple.quarantine tf-hub`.
+file next to them. macOS quarantines binaries downloaded through a browser — either use `curl` as above, or clear the flag with
+`xattr -d com.apple.quarantine tf-hub`.
 
 ## Usage
 
@@ -99,7 +101,7 @@ bun run typecheck       # types
 bun run lint            # oxlint (quality gate)
 bun run fmt             # oxfmt
 bun run knip            # unused exports, files and dependencies
-bun run build           # bundle to dist/index.mjs
+bun run build           # bundle to dist/ (entry plus lazily loaded chunks)
 bun run generate        # refresh the OpenAPI spec and regenerate Zod schemas
 ```
 

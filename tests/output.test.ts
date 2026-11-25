@@ -1,13 +1,30 @@
-import { describe, expect, it } from "bun:test";
+import { stripVTControlCharacters } from "node:util";
+import { describe, expect, it, spyOn } from "bun:test";
 
-import { formatMinutes, formatName, formatValue, missingValue, plainText } from "../src/cli/output.ts";
-import { renderTable } from "../src/cli/table.ts";
+import {
+  formatMinutes,
+  formatName,
+  formatValue,
+  missingValue,
+  plainText,
+  printJson,
+  printTable,
+  stripControlCharacters,
+} from "../src/cli/output.ts";
+import { displayWidth, renderTable } from "../src/cli/table.ts";
+
+describe("printTable", () => {
+  it("prints a message instead of an empty table and total", () => {
+    const writeSpy = spyOn(process.stdout, "write").mockImplementation(() => true);
+
+    printTable([], ["ID", "Name"]);
+
+    const output = stripVTControlCharacters(writeSpy.mock.calls.map(([chunk]) => String(chunk)).join(""));
+    expect(output).toBe("No records found.\n");
+  });
+});
 
 describe("renderTable", () => {
-  it("renders a placeholder instead of an empty table", () => {
-    expect(renderTable([], ["ID", "Name"])).toContain("(no data)");
-  });
-
   it("pads every column to its widest cell", () => {
     const rendered = renderTable(
       [
@@ -19,6 +36,33 @@ describe("renderTable", () => {
 
     expect(rendered).toContain("A       Lead");
     expect(rendered).toContain("Longer  QA");
+  });
+
+  it("measures combining marks and wide characters by their display width", () => {
+    expect(displayWidth("e\u0301")).toBe(1);
+    expect(displayWidth("日本")).toBe(4);
+
+    const rendered = stripVTControlCharacters(
+      renderTable(
+        [
+          { Name: "日本", Role: "QA" },
+          { Name: "Ann", Role: "Lead" },
+        ],
+        ["Name", "Role"],
+      ),
+    );
+
+    expect(rendered).toContain("日本  QA");
+    expect(rendered).toContain("Ann   Lead");
+  });
+
+  it("shrinks the widest column with an ellipsis to fit the available width", () => {
+    const rendered = stripVTControlCharacters(
+      renderTable([{ ID: "1", Note: "A very long note that cannot fit" }], ["ID", "Note"], 20),
+    );
+
+    expect(rendered.split("\n").every((line) => displayWidth(line) <= 20)).toBe(true);
+    expect(rendered).toContain("…");
   });
 });
 
@@ -74,5 +118,27 @@ describe("plainText", () => {
   it("returns an empty string for missing input", () => {
     expect(plainText(null)).toBe("");
     expect(plainText(undefined)).toBe("");
+  });
+
+  it("leaves out-of-range and control-character entities encoded instead of crashing or decoding them", () => {
+    expect(plainText("<p>&#9999999; &#27;[2J ok &#269;</p>")).toBe("&#9999999; &#27;[2J ok č");
+  });
+});
+
+describe("printJson", () => {
+  it("escapes DEL and C1 controls that JSON.stringify would pass through raw", () => {
+    const writeSpy = spyOn(process.stdout, "write").mockImplementation(() => true);
+
+    printJson({ note: "a\u009B2Jb\u007F" });
+
+    const output = String(writeSpy.mock.calls[0]?.[0]);
+    expect(output).toContain(String.raw`a\u009b2Jb\u007f`);
+    expect(JSON.parse(output)).toEqual({ note: "a\u009B2Jb\u007F" });
+  });
+});
+
+describe("stripControlCharacters", () => {
+  it("removes terminal escape sequences' control characters but keeps tabs and newlines", () => {
+    expect(stripControlCharacters("a\u001B]52;c;evil\u0007b\tc\nd")).toBe("a]52;c;evilb\tc\nd");
   });
 });

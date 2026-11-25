@@ -14,9 +14,9 @@ bun run typecheck       # tsc --noEmit (src, tests, scripts, configs)
 bun run lint            # oxlint, deny-warnings
 bun run fmt             # oxfmt
 bun run knip            # unused exports, files and dependencies
-bun run build           # node-ready bundle to dist/index.mjs (CI enforces a size budget); the
-                        # `--conditions=worker` flag makes ofetch resolve to its universal entry —
-                        # Node >= 22 has native fetch, so bundling node-fetch-native would be dead weight
+bun run build           # node-ready bundle (scripts/build.ts): a tiny dist/index.mjs that enables the V8
+                        # compile cache, plus lazily loaded chunks in dist/chunks — the MCP server and the
+                        # browser login never load for ordinary commands (CI enforces a size budget)
 bun run build:binary    # standalone executable for the current platform (dist/tf-hub)
 bun run generate        # refresh the OpenAPI spec and regenerate Zod schemas
 ```
@@ -45,20 +45,25 @@ One folder per feature domain; everything wires up exactly once.
   made tolerant and which noise fields are dropped). Never edit generated files; the generated folder is
   excluded from lint/format/knip.
 - `cli/` — output helpers (`tableRenderer`/`detailsRenderer`/`deletedRenderer`, `formatValue` for the `—`
-  placeholder, `printJson` — indented in a terminal, compact when piped), the Zod→citty bridge, `usage.ts`
-  (command lists show headline summaries, a command's own `--help` appends the full description), error
-  handling and paging notices on stderr, update notifier. The notifier and the `update`
+  placeholder, `printJson` — indented in a terminal, compact when piped; tables fit the terminal width and
+  text from other people is stripped of control characters), the Zod→citty bridge (kebab-case flags,
+  required and enum flags, unknown flags rejected), `main.ts` (the runner: usage errors go to stderr with a
+  suggestion and exit code 2, runtime failures exit 1), `usage.ts` (command lists show headline summaries, a
+  command's own `--help` appends the rest of the description; `cliWording` turns MCP tool names and
+  `key=value` hints into CLI commands and flags), paging notices on stderr after the output, update
+  notifier (stderr, after the command). The notifier and the `update`
   command detect standalone binaries (`runsAsStandaloneBinary`) and point those users to the GitHub
   release assets instead of a package manager; `scripts/build-release-artifacts.ts` cross-compiles
   the linux/darwin/windows binaries that the release workflow attaches to every GitHub release.
 - `mcp/server.ts` — registers every operation as an MCP tool over stdio and returns compact JSON, preceded by
   one text block per paging notice (first, so a client that truncates long results still sees it). The server instructions carry the cross-tool conventions (identity,
-  `mine`, paging, formats, update semantics). Stdout carries JSON-RPC; logs go through `mcpConsola`
+  `mine`, paging, formats, update semantics, untrusted text). Tool inputs are strict: unknown arguments fail. Stdout carries JSON-RPC; logs go through `mcpConsola`
   (stderr). The SDK parses tool arguments — never re-parse them.
 - `commands/` — interactive-only commands (`login`, `logout`, `mcp-server`, `update`).
-- `auth/` — Firebase browser login (h3), token refresh, and credential storage in an owner-only
-  file (0600, XDG config path) — the npm/gcloud/docker model, chosen over the OS keychain to avoid
-  keychain confirmation prompts on every invocation.
+- `auth/` — Firebase browser login (h3; the callback accepts only the page it served — per-login nonce,
+  host and origin checks — and gives up after five minutes), one shared token refresh, and credential
+  storage in an owner-only file (0600, written atomically, XDG config path) — the npm/gcloud/docker model,
+  chosen over the OS keychain to avoid keychain confirmation prompts on every invocation.
 - `config.ts` / `runtime.ts` — all constants; runtime holds base64-obfuscated **public** identifiers only.
 
 ## Add an operation
@@ -67,8 +72,10 @@ One folder per feature domain; everything wires up exactly once.
    (run `bun run generate` first if the DTO is new on the server).
 2. In `domains/<domain>/index.ts`: a `defineAction` with a described input schema (reuse `domains/fields.ts`
    helpers — `limitField`, `monthField`, `uuidField`, `explicitBooleanField` for booleans in updates,
-   `commaSeparated*Field` for lists, `jsonField` for nested payloads; they accept both the native JSON type
-   MCP clients send and the string a CLI flag carries), a `run`, and a `render`. Override `annotations` only
+   `commaSeparated*Field` for lists, `jsonField` for nested payloads, `numberField` for numbers, `mineField`
+   for "only my records"; they accept both the native JSON type MCP clients send and the string a CLI flag
+   carries), a `run`, and a `render`. Rich text fields use `richTextSchema` in the response schema, so they
+   leave the boundary as plain text; write actions return lean records (no bodies, bios or permissions). Override `annotations` only
    when the verb misleads (e.g. a POST that changes nothing).
 3. New domain? Create the folder and add the entry to `domains/index.ts` (order = help order).
 4. Add a focused test in `tests/` — assert behavior and failure paths, never trivia.
@@ -109,7 +116,9 @@ links) are removed from the response schemas during normalization.
   exception is the compiled-binary check in the update notifier). Bun APIs are fine in `scripts/`
   and `tests/`. Prefer unjs/maintained libraries over custom code — but never add a dependency to
   replace fewer than ~10 lines.
-- One logger: consola. MCP mode logs via `mcpConsola` only (stdout must stay clean).
+- One logger: consola, for messages only. Command output (JSON, tables, details, help) goes through
+  `writeOutput` — consola restyles backticks and underscores and prefixes lines under `CI`. MCP mode logs
+  via `mcpConsola` only (stdout must stay clean).
 - Validate untrusted JSON with Zod at the boundary; never cast with `as`.
 - Repeated literals become shared constants/helpers (`formatValue`, field helpers, …).
 - CLI help and MCP descriptions: complete enough to use the operation cold, no longer than that.

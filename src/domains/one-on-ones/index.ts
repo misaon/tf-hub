@@ -4,14 +4,13 @@ import {
   deletedRenderer,
   detailsRenderer,
   ellipsize,
-  plainText,
   formatDate,
   formatName,
   formatValue,
   tableRenderer,
 } from "../../cli/output.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
-import { dateField, explicitBooleanField, limitField, offsetField, uuidField } from "../fields.ts";
+import { dateField, explicitBooleanField, limitField, mineField, offsetField, uuidField } from "../fields.ts";
 import {
   createOneOnOne,
   deleteOneOnOne,
@@ -34,7 +33,7 @@ const oneOnOneDetails = detailsRenderer<OneOnOne>([
   ["Company rating", (oneOnOne) => formatValue(oneOnOne.companyRating)],
   ["Own rating", (oneOnOne) => formatValue(oneOnOne.collaboratorRating)],
   ["Financial", (oneOnOne) => formatValue(oneOnOne.isFinancialMessage ?? false)],
-  ["Message", (oneOnOne) => ellipsize(plainText(oneOnOne.message), 100)],
+  ["Message", (oneOnOne) => ellipsize(oneOnOne.message, 100)],
   ["UUID", (oneOnOne) => formatValue(oneOnOne.uuid)],
 ]);
 
@@ -51,17 +50,13 @@ export const oneOnOnesDomain: RegistryEntry = defineDomain({
       input: z.object({
         limit: limitField,
         offset: offsetField,
-        mine: z.boolean().default(false).describe("Only 1on1s of the signed-in user."),
+        mine: mineField("Only 1on1s of the signed-in user."),
         collaboratorUuid: uuidField("Only 1on1s with the collaborator with this UUID.").optional(),
         onlyFinancialMessages: z.boolean().default(false).describe("Only records flagged as financial (salary) notes."),
         dateFrom: dateField("Only 1on1s on or after this date (YYYY-MM-DD).").optional(),
         dateTo: dateField("Only 1on1s on or before this date (YYYY-MM-DD).").optional(),
       }),
-      async run(input) {
-        const oneOnOnes = await listOneOnOnes(input);
-
-        return oneOnOnes.map((oneOnOne) => Object.assign(oneOnOne, { message: plainText(oneOnOne.message) }));
-      },
+      run: (input) => listOneOnOnes(input),
       render: tableRenderer<OneOnOne>([
         ["Date", (oneOnOne) => formatDate(oneOnOne.date)],
         ["Collaborator", (oneOnOne) => formatName(oneOnOne.collaborator)],

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { detailsRenderer, formatValue, tableRenderer } from "../../cli/output.ts";
-import { standaloneEntry, type RegistryEntry } from "../domain.ts";
+import { readOnlyAnnotations, standaloneEntry, type RegistryEntry } from "../domain.ts";
 import { limitField, offsetField } from "../fields.ts";
 import { defineOperation } from "../operation.ts";
 import { getEnums, listCostCategories, listPermissions } from "./api.ts";
@@ -22,6 +22,7 @@ export const permissionsEntry: RegistryEntry = standaloneEntry(
       ["Value", (permission) => formatValue(permission.value)],
     ]),
   },
+  readOnlyAnnotations,
 );
 
 export const costCategoriesEntry: RegistryEntry = standaloneEntry(
@@ -41,6 +42,7 @@ export const costCategoriesEntry: RegistryEntry = standaloneEntry(
       ["Active", (category) => formatValue(category.active)],
     ]),
   },
+  readOnlyAnnotations,
 );
 
 export const enumsEntry: RegistryEntry = standaloneEntry(
@@ -59,4 +61,5 @@ export const enumsEntry: RegistryEntry = standaloneEntry(
       ["Bonus XP donors", (enums) => formatValue(enums.bonusXpDonorTypes?.join(", "))],
     ]),
   },
+  readOnlyAnnotations,
 );

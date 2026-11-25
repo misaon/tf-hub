@@ -57,12 +57,24 @@ function describeServerError(error: FetchError): string {
 }
 
 function adviceFor(status: number | undefined): string {
+  if (status === undefined) {
+    return " Check the connection and retry once; narrow the filters if the request is large.";
+  }
+
   if (status === 401) {
     return " Your session has expired — run `tf-hub login`.";
   }
 
   if (status === 403) {
     return " Your account is missing the TF Hub permission this operation requires — ask a TF Hub administrator.";
+  }
+
+  if (status === 404) {
+    return " The record does not exist or is not visible to you — check the ID against the matching list.";
+  }
+
+  if (status === 429 || status >= 500) {
+    return " The TF Hub API is unavailable right now — retry in a moment.";
   }
 
   return "";
@@ -78,7 +90,7 @@ export class ApiRequestError extends Error {
   }
 }
 
-function requestFailure(path: string, error: unknown): unknown {
+function requestFailure(error: unknown): unknown {
   if (!(error instanceof FetchError)) {
     return error;
   }
@@ -86,14 +98,23 @@ function requestFailure(path: string, error: unknown): unknown {
   const reason = error.status === undefined ? "network error or timeout" : `HTTP ${error.status}`;
 
   return new ApiRequestError(
-    `Request to ${path} failed (${reason}).${describeServerError(error)}${adviceFor(error.status)}`,
+    `TF Hub request failed (${reason}).${describeServerError(error)}${adviceFor(error.status)}`,
     error.status,
     { cause: error },
   );
 }
 
+// Every caller passes a gateway path; an absolute URL would send the ID token to another host.
+function assertGatewayPath(path: string): void {
+  if (!path.startsWith("/tf/hub/")) {
+    throw new Error(`Refusing to call a path outside the TF Hub API: ${path}`);
+  }
+}
+
 // Returns the whole response body; most callers want `callApi`, which unwraps the `data` envelope.
 export async function callApiEnvelope(path: string, options: CallApiOptions = {}): Promise<unknown> {
+  assertGatewayPath(path);
+
   const idToken = await getValidIdToken();
   const response = await apiClient<unknown>(path, {
     method: options.method ?? "GET",
@@ -101,7 +122,7 @@ export async function callApiEnvelope(path: string, options: CallApiOptions = {}
     ...(options.query ? { query: options.query } : {}),
     ...(options.body ? { body: options.body } : {}),
   }).catch((error: unknown) => {
-    throw requestFailure(path, error);
+    throw requestFailure(error);
   });
 
   recordTruncatedPage(path, response);

@@ -6,22 +6,31 @@ import { maxRecordsPerPage } from "../config.ts";
 export const allTimeFromDate = "2000-01-01";
 export const allTimeToDate = "2100-01-01";
 
-export const limitField = z.coerce
-  .number()
-  .int()
-  .min(1)
-  .default(maxRecordsPerPage)
-  .describe("Maximum number of records to return.");
+const numericString = z
+  .string()
+  .regex(/^-?\d+(?:\.\d+)?$/u, "Expected a number.")
+  .transform(Number);
 
-export const offsetField = z.coerce
-  .number()
-  .int()
-  .min(0)
+// MCP clients send numbers and CLI flags carry strings; booleans and arrays must never coerce into an ID.
+export function numberField<Schema extends z.ZodNumber>(schema: Schema) {
+  return z.union([z.number(), numericString], { error: "Expected a number." }).pipe(schema);
+}
+
+export const limitField = numberField(z.number().int().min(1).max(maxRecordsPerPage))
+  .default(maxRecordsPerPage)
+  .describe(`Maximum number of records to return (at most ${maxRecordsPerPage}).`);
+
+export const offsetField = numberField(z.number().int().min(0))
   .default(0)
   .describe("Number of records to skip (for pagination).");
 
+// The runner keys its 403 hint off this field, so every "only my records" filter must use it.
+export function mineField(description: string) {
+  return z.boolean().default(false).describe(description);
+}
+
 export function idField(description: string) {
-  return z.coerce.number().int().positive().describe(description);
+  return numberField(z.number().int().positive()).describe(description);
 }
 
 const uuidPattern = /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}$/iu;
@@ -58,6 +67,13 @@ export function dateTimeField(description: string) {
   return z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}(?:[T ].+)?$/u, "Invalid date. Use ISO 8601, e.g. 2026-06-10 or 2026-06-10T09:00:00.")
+    .describe(description);
+}
+
+export function timeOfDayField(description: string) {
+  return z
+    .string()
+    .regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/u, "Invalid time. Use the format HH:mm, e.g. 09:30.")
     .describe(description);
 }
 

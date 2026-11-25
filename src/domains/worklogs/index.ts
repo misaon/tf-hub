@@ -13,7 +13,7 @@ import {
   tableRenderer,
   type ColumnSpec,
 } from "../../cli/output.ts";
-import { getCurrentCollaborator, resolveCollaboratorScope } from "../collaborators/api.ts";
+import { resolveCollaboratorScope } from "../collaborators/api.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
 import {
   allTimeFromDate,
@@ -22,6 +22,8 @@ import {
   dateTimeField,
   idField,
   limitField,
+  mineField,
+  numberField,
   offsetField,
   uuidField,
 } from "../fields.ts";
@@ -40,7 +42,7 @@ import {
 const filterInput = z.object({
   limit: limitField,
   offset: offsetField,
-  mine: z.boolean().default(false).describe("Only worklogs of the signed-in user."),
+  mine: mineField("Only worklogs of the signed-in user."),
   fromDate: dateField("Only worklogs on or after this date (YYYY-MM-DD).").default(allTimeFromDate),
   toDate: dateField("Only worklogs on or before this date (YYYY-MM-DD).").default(allTimeToDate),
   collaboratorUuid: uuidField("Only worklogs of the collaborator with this UUID.").optional(),
@@ -92,26 +94,12 @@ export const worklogsDomain: RegistryEntry = defineDomain({
         "description. Logging is limited to recent days and the daily maximum set by the company.",
       input: z.object({
         description: z.string().min(1).describe("What was worked on."),
-        timeSpent: z.coerce.number().int().min(1).describe("Time spent in minutes, e.g. 90 for 1h 30m."),
+        timeSpent: numberField(z.number().int().min(1)).describe("Time spent in minutes, e.g. 90 for 1h 30m."),
         started: dateTimeField("When the work started (YYYY-MM-DD or full ISO date-time)."),
         costCategoryId: idField("Cost category ID (see `cost-categories`)."),
         projectUuid: uuidField("UUID of the related project (see `projects-list`).").optional(),
-        collaboratorId: idField("Numeric ID of the collaborator. Defaults to the signed-in user.").optional(),
       }),
-      async run({ projectUuid, collaboratorId, ...rest }) {
-        let resolvedCollaboratorId = collaboratorId;
-
-        if (resolvedCollaboratorId === undefined) {
-          const me = await getCurrentCollaborator();
-          resolvedCollaboratorId = me.id ?? undefined;
-        }
-
-        if (resolvedCollaboratorId === undefined) {
-          throw new Error("Could not resolve the collaborator ID. Pass collaboratorId explicitly.");
-        }
-
-        return createWorklog({ ...rest, projectUuid: projectUuid ?? null, collaboratorId: resolvedCollaboratorId });
-      },
+      run: ({ projectUuid, ...rest }) => createWorklog({ ...rest, projectUuid: projectUuid ?? null }),
       render: detailsRenderer(worklogColumns(100)),
     }),
     defineAction({
@@ -120,7 +108,7 @@ export const worklogsDomain: RegistryEntry = defineDomain({
       input: z.object({
         id: idField("Numeric ID of the worklog to update."),
         description: z.string().min(1).describe("Updated description of the work."),
-        timeSpent: z.coerce.number().int().min(1).describe("Updated time spent in minutes."),
+        timeSpent: numberField(z.number().int().min(1)).describe("Updated time spent in minutes."),
         started: dateTimeField("Updated start of the work (YYYY-MM-DD or full ISO date-time)."),
         costCategoryId: idField("Updated cost category ID."),
         projectUuid: uuidField("Updated project UUID; omit to detach the worklog from a project.").optional(),

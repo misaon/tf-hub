@@ -2,9 +2,13 @@ import { z } from "zod";
 
 import { callApi } from "../../api/client.ts";
 import {
+  type zUpdateWorkingTimeRecordDateItemDto,
+  zUserLegalType,
   zWorkingTimeRecordDto,
   zWorkingTimeRecordItemDto,
+  zWorkingTimeRecordState,
   zWorkingTimeRecordSummaryDto,
+  zWorkingTimeRecordType,
 } from "../../api/generated/zod.gen.ts";
 import { v3 } from "../../api/paths.ts";
 import type { Paging } from "../shared.ts";
@@ -12,22 +16,9 @@ import type { Paging } from "../shared.ts";
 const recordsPath = v3("working-time-records");
 const recordItemsPath = v3("working-time-record-items");
 
-export const workingTimeRecordStates = [
-  "WAITING_FOR_CONFIRMATION",
-  "WAITING_FOR_CLOSURE",
-  "CLOSED",
-  "RETURNED",
-] as const;
-export const workingTimeRecordTypes = [
-  "WORK",
-  "VACATION_480",
-  "VACATION_240",
-  "NATIONAL_HOLIDAY",
-  "ILLNESS",
-  "UNPAID_TIME_OFF",
-  "INACCESSIBILITY",
-] as const;
-export const legalTypes = ["HPP", "DPP", "ZL"] as const;
+export const workingTimeRecordStates = zWorkingTimeRecordState.options;
+export const workingTimeRecordTypes = zWorkingTimeRecordType.options;
+export const legalTypes = zUserLegalType.options;
 
 export type WorkingTimeRecord = z.infer<typeof zWorkingTimeRecordDto>;
 export type WorkingTimeRecordItem = z.infer<typeof zWorkingTimeRecordItemDto>;
@@ -53,18 +44,15 @@ export async function getWorkingTimeRecordMonth(options: {
 
 export async function getWorkingTimeRecordsSummary(options: {
   collaboratorUuid?: string | undefined;
-  month?: string | undefined;
-  year?: string | undefined;
+  month?: number | undefined;
+  year?: number | undefined;
   legalType?: (typeof legalTypes)[number] | undefined;
   state?: string | undefined;
 }): Promise<WorkingTimeRecordSummary[]> {
   return summaryListSchema.parse(await callApi(`${recordsPath}/summary`, { query: options }));
 }
 
-export interface DateItemInput {
-  date: string;
-  workItems: { type: string; workStart: string; workEnd: string }[];
-}
+type DateItemInput = z.infer<typeof zUpdateWorkingTimeRecordDateItemDto>;
 
 export async function updateWorkingTimeRecordItem(options: {
   id: number;
@@ -80,7 +68,7 @@ export async function updateWorkingTimeRecordItem(options: {
 export async function updateWorkingTimeRecordItemStatus(options: {
   id: number;
   state: (typeof workingTimeRecordStates)[number];
-  note: string;
+  note?: string | undefined;
 }): Promise<WorkingTimeRecordItem> {
   const { id, ...body } = options;
 

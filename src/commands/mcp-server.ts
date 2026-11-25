@@ -15,9 +15,8 @@ export const mcpServerCommand = defineCommand({
       type: "string",
       description: "Only expose these comma-separated domains.",
     },
-    readOnly: {
+    "read-only": {
       type: "boolean",
-      default: false,
       description: "Expose only read-only tools.",
     },
   },
@@ -29,8 +28,7 @@ export const mcpServerCommand = defineCommand({
     const toolsets =
       typeof args.toolsets === "string" && args.toolsets.length > 0 ? splitCommaList(args.toolsets) : undefined;
 
-    const filter = { toolsets, readOnly: args.readOnly === true };
-    selectOperations(filter);
+    const selectedOperations = selectOperations({ toolsets, readOnly: args["read-only"] === true });
 
     mcpConsola.info(`tf-hub v${packageJson.version} MCP server listening on stdio.`);
 
@@ -38,6 +36,6 @@ export const mcpServerCommand = defineCommand({
       mcpConsola.info("Waiting for an MCP client to connect… press Ctrl-C to stop.");
     }
 
-    await startMcpServer(filter);
+    await startMcpServer(selectedOperations);
   },
 });

@@ -26,28 +26,18 @@ describe("documents operations", () => {
     expect(withContent).toEqual([expect.objectContaining({ content: "Contract\nTerms & conditions" })]);
   });
 
-  it("signs a document with only its state, re-sending the stored title and content untouched", async () => {
+  it("signs a document with one request that carries only the new state", async () => {
     await seedValidSession();
 
-    let requestBody: unknown = null;
-    mockFetch((_input, init) => {
-      if (init?.method === "PUT") {
-        requestBody = JSON.parse(String(init.body));
-
-        return Promise.resolve(jsonResponse({ message: "OK", data: { ...storedDocument, documentState: "SIGNED" } }));
-      }
-
-      return Promise.resolve(jsonResponse({ message: "OK", data: [storedDocument] }));
-    });
+    const fetchSpy = mockFetch(() =>
+      Promise.resolve(jsonResponse({ message: "OK", data: { ...storedDocument, documentState: "SIGNED" } })),
+    );
 
     const updateOperation = operationByName(documentsDomain.operations, "documents-update");
     await updateOperation.run(updateOperation.input.parse({ uuid: storedDocument.uuid, documentState: "SIGNED" }));
 
-    expect(requestBody).toEqual({
-      documentState: "SIGNED",
-      title: storedDocument.title,
-      content: storedDocument.content,
-    });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(String(fetchSpy.mock.calls[0]?.[1]?.body))).toEqual({ documentState: "SIGNED" });
   });
 });
 

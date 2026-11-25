@@ -1,18 +1,28 @@
 import { z } from "zod";
 
+import { zUpdateWorkingTimeRecordDateItemDto } from "../../api/generated/zod.gen.ts";
 import {
   deletedRenderer,
   detailsRenderer,
   formatName,
+  formatMinutes,
   formatValue,
-  missingValue,
   printJson,
   printSuccess,
   tableRenderer,
 } from "../../cli/output.ts";
 import { resolveCollaboratorScope } from "../collaborators/api.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
-import { idField, jsonField, limitField, monthField, offsetField, uuidField } from "../fields.ts";
+import {
+  idField,
+  jsonField,
+  limitField,
+  mineField,
+  monthField,
+  numberField,
+  offsetField,
+  uuidField,
+} from "../fields.ts";
 import {
   deleteWorkingTimeRecord,
   getWorkingTimeRecordMonth,
@@ -33,21 +43,7 @@ const stateDescription =
   "Record state: WAITING_FOR_CONFIRMATION (employee is editing), WAITING_FOR_CLOSURE (awaiting HR approval), " +
   "RETURNED (HR returned it for fixes), CLOSED (approved, final).";
 
-const dateItemsSchema = z.array(
-  z.object({
-    date: z.string(),
-    workItems: z.array(
-      z.object({
-        type: z.enum(workingTimeRecordTypes),
-        workStart: z.string(),
-        workEnd: z.string(),
-      }),
-    ),
-  }),
-);
-
-const hours = (minutes: number | null | undefined): string =>
-  typeof minutes === "number" ? `${Math.round((minutes / 60) * 10) / 10}h` : missingValue;
+const dateItemsSchema = z.array(zUpdateWorkingTimeRecordDateItemDto);
 
 export const workingTimeDomain: RegistryEntry = defineDomain({
   name: "working-time",
@@ -61,7 +57,7 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
       input: z.object({
         limit: limitField,
         offset: offsetField,
-        mine: z.boolean().default(false).describe("Only records of the signed-in user."),
+        mine: mineField("Only records of the signed-in user."),
         collaboratorUuid: uuidField("Only records of the collaborator with this UUID.").optional(),
         month: monthField("Only records for this month (YYYY-MM).").optional(),
       }),
@@ -79,7 +75,7 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
           (record) =>
             formatValue(
               (record.items ?? [])
-                .map((item) => `${item.id}: ${item.legalType ?? "?"} ${item.state ?? "?"}`)
+                .map((item) => `${item.id}: ${formatValue(item.legalType)} ${formatValue(item.state)}`)
                 .join(", "),
             ),
         ],
@@ -105,28 +101,23 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
         "holiday minutes plus the approval state (HR administration).",
       input: z.object({
         collaboratorUuid: uuidField("Only the collaborator with this UUID.").optional(),
-        month: z.coerce.number().int().min(1).max(12).describe("Calendar month number (1-12).").optional(),
-        year: z.coerce.number().int().min(2000).max(2200).describe("Calendar year, e.g. 2026.").optional(),
+        month: numberField(z.number().int().min(1).max(12)).describe("Calendar month number (1-12).").optional(),
+        year: numberField(z.number().int().min(2000).max(2200)).describe("Calendar year, e.g. 2026.").optional(),
         legalType: z
           .enum(legalTypes)
           .describe("Employment legal type: HPP (full-time), DPP (work agreement), ZL (other).")
           .optional(),
         state: z.enum(workingTimeRecordStates).describe(stateDescription).optional(),
       }),
-      run: ({ month, year, ...rest }) =>
-        getWorkingTimeRecordsSummary({
-          ...rest,
-          month: month === undefined ? undefined : String(month),
-          year: year === undefined ? undefined : String(year),
-        }),
+      run: (input) => getWorkingTimeRecordsSummary(input),
       render: tableRenderer<WorkingTimeRecordSummary>([
         ["Month", (summary) => formatValue(summary.month)],
         ["User", (summary) => formatName(summary.user)],
         ["Type", (summary) => formatValue(summary.legalType)],
         ["State", (summary) => formatValue(summary.state)],
-        ["Worked", (summary) => hours(summary.workMinutes)],
-        ["Vacation", (summary) => hours(summary.vacationMinutes)],
-        ["Illness", (summary) => hours(summary.illnessMinutes)],
+        ["Worked", (summary) => formatMinutes(summary.workMinutes)],
+        ["Vacation", (summary) => formatMinutes(summary.vacationMinutes)],
+        ["Illness", (summary) => formatMinutes(summary.illnessMinutes)],
       ]),
     }),
     defineAction({
@@ -157,7 +148,7 @@ export const workingTimeDomain: RegistryEntry = defineDomain({
       input: z.object({
         id: idField("Numeric ID of the working time record item."),
         state: z.enum(workingTimeRecordStates).describe(stateDescription),
-        note: z.string().default("").describe("Reason or note for the state change."),
+        note: z.string().min(1).describe("Reason or note for the state change.").optional(),
       }),
       positionals: ["id", "state"],
       run: (input) => updateWorkingTimeRecordItemStatus(input),

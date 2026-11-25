@@ -7,7 +7,6 @@ import {
   deletedRenderer,
   detailsRenderer,
   ellipsize,
-  plainText,
   formatDate,
   formatName,
   formatValue,
@@ -15,12 +14,13 @@ import {
 } from "../../cli/output.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
 import { dateField, limitField, offsetField, uuidField } from "../fields.ts";
-import type { Paging } from "../shared.ts";
+import { richTextSchema, type Paging } from "../shared.ts";
 
 const notesPath = v3("collaborator-notes");
 
-type CollaboratorNote = z.infer<typeof zCollaboratorNoteDto>;
-const noteListSchema = z.array(zCollaboratorNoteDto);
+const noteSchema = zCollaboratorNoteDto.extend({ note: richTextSchema });
+type CollaboratorNote = z.infer<typeof noteSchema>;
+const noteListSchema = z.array(noteSchema);
 
 async function listCollaboratorNotes(
   options: Paging & {
@@ -33,13 +33,13 @@ async function listCollaboratorNotes(
 }
 
 async function createCollaboratorNote(options: { collaboratorUuid: string; note: string }): Promise<CollaboratorNote> {
-  return zCollaboratorNoteDto.parse(await callApi(notesPath, { method: "POST", body: options }));
+  return noteSchema.parse(await callApi(notesPath, { method: "POST", body: options }));
 }
 
 async function updateCollaboratorNote(options: { uuid: string; note: string }): Promise<CollaboratorNote> {
   const { uuid, ...body } = options;
 
-  return zCollaboratorNoteDto.parse(await callApi(`${notesPath}/${uuid}`, { method: "PUT", body }));
+  return noteSchema.parse(await callApi(`${notesPath}/${uuid}`, { method: "PUT", body }));
 }
 
 async function deleteCollaboratorNote(options: { uuid: string }): Promise<void> {
@@ -50,7 +50,7 @@ const noteDetails = detailsRenderer<CollaboratorNote>([
   ["Date", (note) => formatDate(note.createdAt)],
   ["Collaborator", (note) => formatName(note.collaborator)],
   ["Editor", (note) => formatName(note.editor)],
-  ["Note", (note) => ellipsize(plainText(note.note), 100)],
+  ["Note", (note) => ellipsize(note.note, 100)],
   ["UUID", (note) => formatValue(note.uuid)],
 ]);
 
@@ -70,11 +70,7 @@ export const collaboratorNotesDomain: RegistryEntry = defineDomain({
         dateFrom: dateField("Only notes created on or after this date (YYYY-MM-DD).").optional(),
         dateTo: dateField("Only notes created on or before this date (YYYY-MM-DD).").optional(),
       }),
-      async run(input) {
-        const notes = await listCollaboratorNotes(input);
-
-        return notes.map((note) => Object.assign(note, { note: plainText(note.note) }));
-      },
+      run: (input) => listCollaboratorNotes(input),
       render: tableRenderer<CollaboratorNote>([
         ["Date", (note) => formatDate(note.createdAt)],
         ["Collaborator", (note) => formatName(note.collaborator)],
