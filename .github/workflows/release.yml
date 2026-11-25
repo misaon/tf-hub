@@ -4,28 +4,24 @@ on:
   push:
     tags: ["v*"]
 
-# Add `id-token: write` back alongside npm provenance once the repository is public.
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
-  publish:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
-      - uses: actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # No caches in the publish job — restored caches could poison the released artifact.
-      - uses: oven-sh/setup-bun@v2.2.0
+      # No caches in the release workflow — restored caches could poison the released artifact.
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version-file: package.json
           no-cache: true
-      - uses: actions/setup-node@v7.1.0
-        with:
-          node-version: 26
-          registry-url: "https://registry.npmjs.org"
-      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile --ignore-scripts
       - name: Verify the tag matches package.json
         run: test "v$(jq -r .version package.json)" = "$GITHUB_REF_NAME"
       - name: Run the full quality gate
@@ -38,14 +34,47 @@ jobs:
       - run: bun run build
       - name: Build the standalone binaries
         run: bun scripts/build-release-artifacts.ts
-      # Provenance requires a public source repository — re-enable the flag once the repo is public.
-      - run: npm publish --access public
+      - name: Pack the npm package and the release notes
+        run: |
+          mkdir -p artifacts/npm
+          npm pack --ignore-scripts --pack-destination artifacts/npm
+          awk '/^## /{count++} count==1' CHANGELOG.md > artifacts/release-notes.md
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 1
+
+  # Secrets live only here, in a job that never installs or runs third-party package code.
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: artifacts
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26
+          registry-url: "https://registry.npmjs.org"
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            artifacts/release/*
+            artifacts/npm/*.tgz
+      - run: npm publish artifacts/npm/*.tgz --access public --provenance --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
       - name: Publish the GitHub release with the binaries
         run: |
-          awk '/^## /{count++} count==1' CHANGELOG.md > release-notes.md
-          gh release create "$GITHUB_REF_NAME" artifacts/release/* \
-            --title "$GITHUB_REF_NAME" --notes-file release-notes.md --verify-tag
+          gh release create "$GITHUB_REF_NAME" artifacts/release/* --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" --notes-file artifacts/release-notes.md --verify-tag
         env:
           GH_TOKEN: ${{ github.token }}

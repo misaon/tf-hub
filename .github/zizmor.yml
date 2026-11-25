@@ -2,8 +2,7 @@ rules:
   unpinned-uses:
     config:
       policies:
-        # Version tags are pinned enough here; Renovate keeps them current.
-        "*": ref-pin
+        "*": hash-pin
   cache-poisoning:
     ignore:
       # Low-confidence false positive: setup-node only caches when the `cache:` input is set,
@@ -11,5 +10,6 @@ rules:
       - release.yml
   use-trusted-publishing:
     ignore:
-      # Trusted publishing requires a public repository; planned for the moment the repo opens up.
+      # The publish job already has `id-token: write`; drop NPM_TOKEN and this entry once
+      # the trusted publisher is configured on npmjs.com.
       - release.yml

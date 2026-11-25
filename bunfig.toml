@@ -3,3 +3,6 @@ preload = ["./tests/preload.ts"]
 coverageSkipTestFiles = true
 # No coverageThreshold: Bun (still as of 1.4) enforces it per file, which fails any realistic aggregate target.
 # Coverage gating happens in Codecov instead.
+
+[install]
+minimumReleaseAge = 259200

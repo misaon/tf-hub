@@ -1,7 +1,15 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":semanticCommits", ":dependencyDashboard", "schedule:weekly"],
-  "lockFileMaintenance": { "enabled": true },
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":dependencyDashboard",
+    "schedule:weekly",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "minimumReleaseAge": "3 days",
   "packageRules": [
     {
@@ -9,6 +17,13 @@
       "matchDepTypes": ["devDependencies"],
       "groupName": "dev dependencies",
       "automerge": true
+    },
+    {
+      "description": "Libraries bundled into the published CLI wait longer and need a human review.",
+      "matchPackageNames": ["citty", "consola", "h3", "ofetch", "open", "zod", "@modelcontextprotocol/server"],
+      "groupName": "bundled runtime dependencies",
+      "minimumReleaseAge": "7 days",
+      "automerge": false
     },
     {
       "description": "Group and auto-merge GitHub Actions once CI passes.",
