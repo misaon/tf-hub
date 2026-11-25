@@ -4,6 +4,34 @@ All notable changes are documented here. This file is maintained by
 [changelogen](https://github.com/unjs/changelogen) from
 [Conventional Commits](https://www.conventionalcommits.org).
 
+## v0.3.0
+
+[compare changes](https://github.com/misaon/tf-hub/compare/v0.2.1...v0.3.0)
+
+### 🚀 Enhancements
+
+- ⚠️  Harden the CLI and MCP server and sync with the latest Hub API ([ba89126](https://github.com/misaon/tf-hub/commit/ba89126))
+
+### 🏡 Chore
+
+- **skills:** Add project-scoped agent skills ([3db809f](https://github.com/misaon/tf-hub/commit/3db809f))
+
+### ✅ Tests
+
+- **cli:** Cover the command runner ([2ca6ef3](https://github.com/misaon/tf-hub/commit/2ca6ef3))
+
+### 🤖 CI
+
+- Split the release into build and publish jobs and pin actions to digests ([39cd60d](https://github.com/misaon/tf-hub/commit/39cd60d))
+
+#### ⚠️ Breaking Changes
+
+- ⚠️  Harden the CLI and MCP server and sync with the latest Hub API ([ba89126](https://github.com/misaon/tf-hub/commit/ba89126))
+
+### ❤️ Contributors
+
+- Ondřej Misák ([@misaon](https://github.com/misaon))
+
 ## v0.2.1
 
 [compare changes](https://github.com/misaon/tf-hub/compare/v0.2.0...v0.2.1)
