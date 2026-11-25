@@ -4,7 +4,6 @@ import {
   deletedRenderer,
   detailsRenderer,
   ellipsize,
-  plainText,
   formatDate,
   formatName,
   formatValue,
@@ -20,6 +19,7 @@ import {
   explicitBooleanField,
   idField,
   limitField,
+  mineField,
   offsetField,
   uuidField,
 } from "../fields.ts";
@@ -46,14 +46,14 @@ const goalDetails = detailsRenderer<Goal>([
   ...goalIdentityColumns,
   ["Done", (goal) => formatValue(goal.done ?? false)],
   ["Active", (goal) => formatValue(goal.active ?? true)],
-  ["Goal", (goal) => ellipsize(plainText(goal.message), 100)],
+  ["Goal", (goal) => ellipsize(goal.message, 100)],
 ]);
 
 const visionDetails = detailsRenderer<Vision>([
   ["ID", (vision) => formatValue(vision.id)],
   ["Collaborator", (vision) => formatName(vision.collaborator)],
   ["Updated", (vision) => formatDate(vision.updatedAt)],
-  ["Vision", (vision) => ellipsize(plainText(vision.message), 200)],
+  ["Vision", (vision) => ellipsize(vision.message, 200)],
 ]);
 
 export const goalsDomain: RegistryEntry = defineDomain({
@@ -69,18 +69,13 @@ export const goalsDomain: RegistryEntry = defineDomain({
       input: z.object({
         limit: limitField,
         offset: offsetField,
-        mine: z.boolean().default(false).describe("Only goals of the signed-in user."),
+        mine: mineField("Only goals of the signed-in user."),
         collaboratorUuid: uuidField("Only goals of the collaborator with this UUID.").optional(),
         fromDate: dateField("Only goals created on or after this date (YYYY-MM-DD).").default(allTimeFromDate),
         toDate: dateField("Only goals created on or before this date (YYYY-MM-DD).").default(allTimeToDate),
       }),
       async run({ mine, collaboratorUuid, ...rest }) {
-        const goals = await listGoals({
-          ...rest,
-          collaboratorUuid: await resolveCollaboratorScope({ mine, collaboratorUuid }),
-        });
-
-        return goals.map((goal) => Object.assign(goal, { message: plainText(goal.message) }));
+        return listGoals({ ...rest, collaboratorUuid: await resolveCollaboratorScope({ mine, collaboratorUuid }) });
       },
       render: tableRenderer<Goal>([
         ...goalIdentityColumns,
@@ -102,33 +97,26 @@ export const goalsDomain: RegistryEntry = defineDomain({
         startDate: dateField("Date work on the goal starts (YYYY-MM-DD)."),
         deadline: dateField("Deadline for completing the goal (YYYY-MM-DD)."),
       }),
-      async run(input) {
-        const editorUuid = await getCurrentCollaboratorUuid();
-
-        return createGoal({ ...input, editorUuid });
-      },
+      run: (input) => createGoal(input),
       render: goalDetails,
     }),
     defineAction({
       action: "update",
       description:
-        "Update a goal's text, dates or state. Mark a goal as completed with done=true, or deactivate it with " +
-        "active=false. All fields are persisted as given.",
+        "Update a goal's text and dates, and optionally its owner or state. Mark a goal as completed with " +
+        "done=true, or deactivate it with active=false. Omitted collaboratorUuid, done and active keep their " +
+        "stored values.",
       input: z.object({
         id: idField("Numeric ID of the goal (see `goals-list`)."),
-        collaboratorUuid: uuidField("UUID of the collaborator the goal belongs to."),
+        collaboratorUuid: uuidField("UUID of the collaborator to reassign the goal to; omit to keep it.").optional(),
         message: z.string().min(1).describe("Updated goal text."),
         startDate: dateField("Updated start date (YYYY-MM-DD)."),
         deadline: dateField("Updated deadline (YYYY-MM-DD)."),
-        done: explicitBooleanField("Whether the goal is completed (true/false)."),
-        active: explicitBooleanField("Whether the goal is active (true/false).").default(true),
+        done: explicitBooleanField("Whether the goal is completed (true/false); omit to keep it.").optional(),
+        active: explicitBooleanField("Whether the goal is active (true/false); omit to keep it.").optional(),
       }),
       positionals: ["id"],
-      async run(input) {
-        const editorUuid = await getCurrentCollaboratorUuid();
-
-        return updateGoal({ ...input, editorUuid });
-      },
+      run: (input) => updateGoal(input),
       render: goalDetails,
     }),
     defineAction({
@@ -159,9 +147,7 @@ export const visionDomain: RegistryEntry = defineDomain({
         collaboratorUuid: uuidField("UUID of the collaborator; defaults to the signed-in user.").optional(),
       }),
       async run({ collaboratorUuid }) {
-        const vision = await getVision({ collaboratorUuid: collaboratorUuid ?? (await getCurrentCollaboratorUuid()) });
-
-        return { ...vision, message: plainText(vision.message) };
+        return getVision({ collaboratorUuid: collaboratorUuid ?? (await getCurrentCollaboratorUuid()) });
       },
       render: visionDetails,
     }),

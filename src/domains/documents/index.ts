@@ -6,25 +6,23 @@ import {
   formatDate,
   formatName,
   formatValue,
-  plainText,
   tableRenderer,
   type ColumnSpec,
 } from "../../cli/output.ts";
 import { resolveCollaboratorScope } from "../collaborators/api.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
-import { dateTimeField, limitField, monthField, offsetField, uuidField } from "../fields.ts";
+import { dateTimeField, limitField, mineField, monthField, offsetField, uuidField } from "../fields.ts";
 import {
   createDocument,
   deleteDocument,
   documentStates,
-  findDocument,
   listDocuments,
   omitContent,
   updateDocument,
-  type Document,
+  type DocumentSummary,
 } from "./api.ts";
 
-const documentColumns: ColumnSpec<Document>[] = [
+const documentColumns: ColumnSpec<DocumentSummary>[] = [
   ["Title", (document) => formatValue(document.title)],
   ["State", (document) => formatValue(document.documentState)],
   ["User", (document) => formatName(document.user)],
@@ -47,7 +45,7 @@ export const documentsDomain: RegistryEntry = defineDomain({
       input: z.object({
         limit: limitField,
         offset: offsetField,
-        mine: z.boolean().default(false).describe("Only documents addressed to the signed-in user."),
+        mine: mineField("Only documents addressed to the signed-in user."),
         userUuid: uuidField("Only documents addressed to the user with this UUID.").optional(),
         month: monthField("Only documents sent in this month (YYYY-MM).").optional(),
         withContent: z.boolean().default(false).describe("Include each document's content as plain text."),
@@ -62,12 +60,13 @@ export const documentsDomain: RegistryEntry = defineDomain({
           return documents.map((document) => omitContent(document));
         }
 
-        return documents.map((document) => Object.assign(document, { content: plainText(document.content) }));
+        return documents;
       },
       render: tableRenderer(documentColumns),
     }),
     defineAction({
       action: "create",
+      annotations: { openWorldHint: true },
       description: "Create a document and send it to a user for digital signing (admin).",
       input: z.object({
         userUuid: uuidField("UUID of the user who should sign the document."),
@@ -79,40 +78,20 @@ export const documentsDomain: RegistryEntry = defineDomain({
           .default("WAITING_FOR_SIGN")
           .describe("Initial state of the document; usually WAITING_FOR_SIGN."),
       }),
-      run: (input) => createDocument(input),
+      run: async (input) => omitContent(await createDocument(input)),
       render: detailsRenderer(documentColumns),
     }),
     defineAction({
       action: "update",
       description:
-        "Update a document's state, title or content. Sign or reject it with documentState SIGNED or REJECTED; " +
-        "CANCELED withdraws it. Omitted title and content keep their stored values, so signing needs only the " +
-        "uuid and the new state.",
+        "Change a document's state: sign it (SIGNED), reject it (REJECTED) or withdraw it (CANCELED). The title " +
+        "and content cannot be changed once the document is sent.",
       input: z.object({
         uuid: uuidField("UUID of the document to update."),
         documentState: z.enum(documentStates).describe("New state of the document."),
-        title: z.string().min(1).describe("New title; omit to keep the current one.").optional(),
-        content: z
-          .string()
-          .min(1)
-          .describe("New content (HTML or plain text); omit to keep the current one.")
-          .optional(),
       }),
-      positionals: ["uuid"],
-      async run({ uuid, documentState, title, content }) {
-        if (title !== undefined && content !== undefined) {
-          return updateDocument({ uuid, documentState, title, content });
-        }
-
-        const current = await findDocument(uuid);
-
-        return updateDocument({
-          uuid,
-          documentState,
-          title: title ?? current.title ?? "",
-          content: content ?? current.content ?? "",
-        });
-      },
+      positionals: ["uuid", "documentState"],
+      run: async (input) => omitContent(await updateDocument(input)),
       render: detailsRenderer(documentColumns),
     }),
     defineAction({

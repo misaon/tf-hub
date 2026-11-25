@@ -5,21 +5,16 @@ import {
   zBackupAbsenceApproverDto,
   zOfficeAbsencesBasicStatisticsDto,
   zOfficeAbsencesDto,
+  zOfficeAbsenceState,
+  zOfficeAbsenceType,
 } from "../../api/generated/zod.gen.ts";
 import { v3 } from "../../api/paths.ts";
 import type { Paging } from "../shared.ts";
 
 const absencesPath = v3("office-absences");
 
-export const officeAbsenceTypes = ["HOME_OFFICE", "HOLIDAY", "WORK_TRAVEL", "ILLNESS", "INACCESSIBILITY"] as const;
-export const officeAbsenceStates = [
-  "WAITING_FOR_APPROVAL",
-  "APPROVED",
-  "REJECTED",
-  "AWAITING_CANCELLATION_APPROVAL",
-  "CANCELED",
-  "DONE",
-] as const;
+export const officeAbsenceTypes = zOfficeAbsenceType.options;
+export const officeAbsenceStates = zOfficeAbsenceState.options;
 
 export type OfficeAbsence = z.infer<typeof zOfficeAbsencesDto>;
 export type OfficeAbsenceStatistics = z.infer<typeof zOfficeAbsencesBasicStatisticsDto>;
@@ -46,8 +41,7 @@ export async function createOfficeAbsence(options: {
   dateTo: string;
   hours: number;
   generalDescription: string;
-  approverDescription: string;
-  collaboratorUuid: string;
+  approverDescription?: string | undefined;
   approverUuid: string;
   weeklyLimitException: boolean;
 }): Promise<OfficeAbsence> {

@@ -1,10 +1,9 @@
-import { describe, expect, it, spyOn } from "bun:test";
-import { consola } from "consola";
+import { describe, expect, it } from "bun:test";
 
 import {
   binaryAssetName,
   binaryDownloadUrl,
-  notifyOnUpdate,
+  findUpdateNotice,
   runsAsStandaloneBinary,
   selectUpdateNotice,
   updateInstallCommand,
@@ -41,13 +40,13 @@ describe("selectUpdateNotice", () => {
 
 describe("updateInstallCommand", () => {
   it("matches the package manager that installed the binary", () => {
-    expect(updateInstallCommand("pkg", "/home/u/.bun/bin/tf-hub")).toBe("bun add -g pkg");
-    expect(updateInstallCommand("pkg", "/home/u/Library/pnpm/tf-hub")).toBe("pnpm add -g pkg");
-    expect(updateInstallCommand("pkg", "/home/u/.yarn/bin/tf-hub")).toBe("yarn global add pkg");
+    expect(updateInstallCommand("pkg", "/home/u/.bun/bin/tf-hub")).toEqual(["bun", "add", "-g", "pkg"]);
+    expect(updateInstallCommand("pkg", "/home/u/Library/pnpm/tf-hub")).toEqual(["pnpm", "add", "-g", "pkg"]);
+    expect(updateInstallCommand("pkg", "/home/u/.yarn/bin/tf-hub")).toEqual(["yarn", "global", "add", "pkg"]);
   });
 
   it("falls back to npm for unrecognized install locations", () => {
-    expect(updateInstallCommand("pkg", "/usr/local/bin/tf-hub")).toBe("npm install -g pkg");
+    expect(updateInstallCommand("pkg", "/usr/local/bin/tf-hub")).toEqual(["npm", "install", "-g", "pkg"]);
   });
 });
 
@@ -69,25 +68,27 @@ describe("standalone binary mode", () => {
   });
 });
 
-describe("notifyOnUpdate", () => {
-  it("notifies about a newer version and reuses the cached answer within the interval", async () => {
-    const originalIsTTY = process.stdout.isTTY;
+describe("findUpdateNotice", () => {
+  it("renders a notice for a newer version and reuses the cached answer within the interval", async () => {
+    const originalStdoutIsTTY = process.stdout.isTTY;
+    const originalStderrIsTTY = process.stderr.isTTY;
     const originalContinuousIntegration = process.env["CI"];
     process.stdout.isTTY = true;
+    process.stderr.isTTY = true;
     process.env["CI"] = "";
 
     try {
-      const box = spyOn(consola, "box").mockReturnValue(undefined);
       const fetchSpy = mockFetch(() => Promise.resolve(jsonResponse({ version: "99.0.0" })));
 
-      await notifyOnUpdate("test-package", "0.1.0");
-      await notifyOnUpdate("test-package", "0.1.0");
+      const first = await findUpdateNotice("test-package", "0.1.0");
+      const second = await findUpdateNotice("test-package", "0.1.0");
 
       expect(fetchSpy).toHaveBeenCalledTimes(1);
-      expect(box).toHaveBeenCalledTimes(2);
-      expect(String(box.mock.calls[0]?.[0])).toContain("99.0.0");
+      expect(first).toContain("99.0.0");
+      expect(second).toBe(first);
     } finally {
-      process.stdout.isTTY = originalIsTTY;
+      process.stdout.isTTY = originalStdoutIsTTY;
+      process.stderr.isTTY = originalStderrIsTTY;
       process.env["CI"] = originalContinuousIntegration;
     }
   });

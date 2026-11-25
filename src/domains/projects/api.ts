@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 import { callApi } from "../../api/client.ts";
-import { zProjectReportDto, zProjectsDto, zSonarCloudMetricsDto } from "../../api/generated/zod.gen.ts";
+import {
+  zProjectReportDto,
+  zProjectsDto,
+  zSonarCloudMetricsDto,
+  type zUpdateProjectReportNoteDto,
+} from "../../api/generated/zod.gen.ts";
 import { v2, v3 } from "../../api/paths.ts";
 import type { Paging } from "../shared.ts";
 
@@ -13,6 +18,7 @@ const sonarCloudMetricsPath = v3("sonar-cloud-metrics");
 export type Project = z.infer<typeof zProjectsDto>;
 export type ProjectReport = z.infer<typeof zProjectReportDto>;
 export type SonarCloudMetrics = z.infer<typeof zSonarCloudMetricsDto>;
+type ProjectReportNote = z.infer<typeof zUpdateProjectReportNoteDto>;
 
 export { zUpdateProjectReportNoteDto as updateProjectReportNoteSchema } from "../../api/generated/zod.gen.ts";
 
@@ -47,8 +53,8 @@ export async function updateProjectReport(options: {
   companyProjectName?: string | undefined;
   reportTitle?: string | undefined;
   unresolvedPoints?: string | undefined;
-  currentNote?: { id: number; text: string; deadline: string } | undefined;
-  prevNote?: { id: number; text: string; deadline: string } | undefined;
+  currentNote?: ProjectReportNote | undefined;
+  prevNote?: ProjectReportNote | undefined;
 }): Promise<ProjectReport> {
   const { uuid, ...body } = options;
 

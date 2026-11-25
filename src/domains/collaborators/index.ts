@@ -6,11 +6,11 @@ import {
   formatDate,
   formatName,
   formatValue,
-  plainText,
   printTable,
   tableRenderer,
   type ColumnSpec,
 } from "../../cli/output.ts";
+import { zCommunicationLanguage } from "../../api/generated/zod.gen.ts";
 import { appLocale } from "../../config.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
 import {
@@ -18,6 +18,7 @@ import {
   explicitBooleanField,
   idField,
   limitField,
+  numberField,
   offsetField,
   uuidField,
 } from "../fields.ts";
@@ -28,31 +29,32 @@ import {
   listCollaborators,
   getPublicCollaborator,
   listPublicCollaborators,
+  leanCollaborator,
   omitBio,
   omitPositionPermissions,
   updateCollaborator,
   updateCollaboratorBio,
   updateCollaboratorLanguage,
+  positionOf,
   type Collaborator,
+  type CollaboratorSummary,
 } from "./api.ts";
 
-export function positionOf(collaborator: Collaborator): string {
-  return collaborator.positionOverride || formatValue(collaborator.positions?.[0]?.name);
-}
-
-function byLastName(collaborators: Collaborator[]): Collaborator[] {
+function byLastName(collaborators: CollaboratorSummary[]): CollaboratorSummary[] {
   return collaborators.toSorted((first, second) =>
     (first.lastName ?? "").localeCompare(second.lastName ?? "", appLocale),
   );
 }
 
-function sortedTableRenderer(columns: ColumnSpec<Collaborator>[]): (collaborators: Collaborator[]) => void {
+function sortedTableRenderer(
+  columns: ColumnSpec<CollaboratorSummary>[],
+): (collaborators: CollaboratorSummary[]) => void {
   return (collaborators) => {
     tableRenderer(columns)(byLastName(collaborators));
   };
 }
 
-const collaboratorDetails = detailsRenderer<Collaborator>([
+const collaboratorDetails = detailsRenderer<CollaboratorSummary>([
   ["Name", formatName],
   ["Email", (collaborator) => formatValue(collaborator.email)],
   ["Position", positionOf],
@@ -86,9 +88,7 @@ export const colleaguesDomain: RegistryEntry = defineDomain({
           return collaborators.map((collaborator) => omitBio(collaborator));
         }
 
-        return collaborators.map((collaborator) =>
-          Object.assign(collaborator, { bioText: plainText(collaborator.bioText) }),
-        );
+        return collaborators;
       },
       render: sortedTableRenderer([
         ["Name", formatName],
@@ -105,9 +105,7 @@ export const colleaguesDomain: RegistryEntry = defineDomain({
       input: z.object({ uuid: uuidField("UUID of the colleague (see `colleagues-list`).") }),
       positionals: ["uuid"],
       async run(input) {
-        const profile = omitPositionPermissions(await getPublicCollaborator(input));
-
-        return { ...profile, bioText: plainText(profile.bioText) };
+        return omitPositionPermissions(await getPublicCollaborator(input));
       },
       render: detailsRenderer<Collaborator>([
         ["Name", formatName],
@@ -144,9 +142,7 @@ export const collaboratorsDomain: RegistryEntry = defineDomain({
           .boolean()
           .default(false)
           .describe("Return only collaborators who have working time records."),
-        workEndMaxDaysOld: z.coerce
-          .number()
-          .int()
+        workEndMaxDaysOld: numberField(z.number().int().min(0))
           .describe("Include recently departed collaborators whose employment ended at most this many days ago.")
           .optional(),
       }),
@@ -188,7 +184,7 @@ export const collaboratorsDomain: RegistryEntry = defineDomain({
         ).optional(),
       }),
       positionals: ["uuid"],
-      run: (input) => updateCollaborator(input),
+      run: async (input) => leanCollaborator(await updateCollaborator(input)),
       render: collaboratorDetails,
     }),
     defineAction({
@@ -199,20 +195,20 @@ export const collaboratorsDomain: RegistryEntry = defineDomain({
         bioText: z.string().describe("New bio text."),
       }),
       positionals: ["uuid"],
-      run: (input) => updateCollaboratorBio(input),
+      run: async (input) => leanCollaborator(await updateCollaboratorBio(input)),
       render: collaboratorDetails,
     }),
     defineAction({
       action: "set-language",
       description: "Set the signed-in user's preferred language. It is used for TF Hub communication.",
       input: z.object({
-        language: z.enum(["cs", "en"]).describe("Preferred language: cs (Czech) or en (English)."),
+        language: zCommunicationLanguage.describe("Preferred language: cs (Czech) or en (English)."),
       }),
       positionals: ["language"],
       async run({ language }) {
         const uuid = await getCurrentCollaboratorUuid();
 
-        return updateCollaboratorLanguage({ uuid, language });
+        return leanCollaborator(await updateCollaboratorLanguage({ uuid, language }));
       },
       render: collaboratorDetails,
     }),
@@ -225,7 +221,7 @@ export const collaboratorsDomain: RegistryEntry = defineDomain({
       async run() {
         const uuid = await getCurrentCollaboratorUuid();
 
-        return confirmSecurityPolicy({ uuid });
+        return leanCollaborator(await confirmSecurityPolicy({ uuid }));
       },
       render: collaboratorDetails,
     }),

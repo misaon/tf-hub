@@ -104,11 +104,11 @@ export const projectsDomain: RegistryEntry = defineDomain({
         unresolvedPoints: z.string().describe("Summary of unresolved points.").optional(),
         currentNote: jsonField(
           updateProjectReportNoteSchema,
-          'Current goal note, e.g. {"id":1,"text":"...","deadline":"YYYY-MM-DD"}.',
+          'Current goal note, e.g. {"id":1,"text":"..."}. Its deadline cannot be changed here.',
         ).optional(),
         previousNote: jsonField(
           updateProjectReportNoteSchema,
-          'Previous goal note, e.g. {"id":1,"text":"...","deadline":"YYYY-MM-DD"}.',
+          'Previous goal note, e.g. {"id":1,"text":"..."}. Its deadline cannot be changed here.',
         ).optional(),
       }),
       positionals: ["uuid", "date"],
@@ -138,6 +138,7 @@ export const sonarDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "fetch",
+      annotations: { openWorldHint: true },
       description: "Fetch fresh SonarCloud metrics for a project and store them. Requires a configured integration.",
       input: z.object({ projectUuid: uuidField("UUID of the project.") }),
       positionals: ["projectUuid"],

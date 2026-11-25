@@ -1,24 +1,31 @@
 import { z } from "zod";
 
 import { callApi } from "../../api/client.ts";
-import { zSitdownNotesDto, zSitdownsDto, zSitdownsRatingsDto, zSitdownsTimesDto } from "../../api/generated/zod.gen.ts";
+import {
+  zSitdownNotesDto,
+  zSitdownRatingEnum,
+  zSitdownsDto,
+  zSitdownsRatingsDto,
+  zSitdownsTimesDto,
+} from "../../api/generated/zod.gen.ts";
 import { v2 } from "../../api/paths.ts";
-import { flagParameter, type Paging } from "../shared.ts";
+import { flagParameter, richTextSchema, type Paging } from "../shared.ts";
 
 const sitdownsPath = v2("sitdowns");
 const sitdownNotesPath = v2("sitdown-notes");
 const sitdownTimesPath = v2("sitdown-times");
 const sitdownRatingsPath = v2("sitdowns-ratings");
 
-export const sitdownRatingValues = ["FAIL", "OK", "GOOD"] as const;
+export const sitdownRatingValues = zSitdownRatingEnum.options;
 
 export type Sitdown = z.infer<typeof zSitdownsDto>;
-export type SitdownNote = z.infer<typeof zSitdownNotesDto>;
+export type SitdownNote = z.infer<typeof sitdownNoteSchema>;
 export type SitdownTime = z.infer<typeof zSitdownsTimesDto>;
 export type SitdownRating = z.infer<typeof zSitdownsRatingsDto>;
 
 const sitdownListSchema = z.array(zSitdownsDto);
-const sitdownNoteListSchema = z.array(zSitdownNotesDto);
+const sitdownNoteSchema = zSitdownNotesDto.extend({ text: richTextSchema });
+const sitdownNoteListSchema = z.array(sitdownNoteSchema);
 const sitdownTimeListSchema = z.array(zSitdownsTimesDto);
 const sitdownRatingListSchema = z.array(zSitdownsRatingsDto);
 
@@ -60,7 +67,7 @@ export async function createSitdownNote(options: {
   projectId: number;
   deadline: string;
 }): Promise<SitdownNote> {
-  return zSitdownNotesDto.parse(await callApi(sitdownNotesPath, { method: "POST", body: options }));
+  return sitdownNoteSchema.parse(await callApi(sitdownNotesPath, { method: "POST", body: options }));
 }
 
 export async function updateSitdownNote(options: {
@@ -71,7 +78,7 @@ export async function updateSitdownNote(options: {
 }): Promise<SitdownNote> {
   const { id, ...body } = options;
 
-  return zSitdownNotesDto.parse(await callApi(`${sitdownNotesPath}/${id}`, { method: "PUT", body }));
+  return sitdownNoteSchema.parse(await callApi(`${sitdownNotesPath}/${id}`, { method: "PUT", body }));
 }
 
 export async function deleteSitdownNote(options: { id: number }): Promise<void> {

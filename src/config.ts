@@ -18,9 +18,21 @@ export const maxRecordsPerPage = 999;
 
 export const apiRequestTimeoutMs = 30_000;
 
+export const loginTimeoutMs = 5 * 60_000;
+
 export const appLocale = "cs";
 
 export const firebaseSdkBaseUrl = "https://www.gstatic.com/firebasejs/12.19.0";
+export const firebaseSdkModules = [
+  {
+    src: `${firebaseSdkBaseUrl}/firebase-app.js`,
+    integrity: "sha384-RJIsoe0CFvPanuqLw3NPVreeQfBNBS6DotHoCTfrxasRhbZXK3oIK/kWJLO/hCaU",
+  },
+  {
+    src: `${firebaseSdkBaseUrl}/firebase-auth.js`,
+    integrity: "sha384-AgtBGZZ/u/7uqnj2oxrSf5J+QuQXF4sEG1w/6PUzbyR3RIG7mkXR2z8Tpdeqay0t",
+  },
+];
 export const loginPageCdnScripts = [
   {
     src: "https://cdn.jsdelivr.net/npm/preact@10.29.8/dist/preact.umd.js",
@@ -35,7 +47,7 @@ export const loginPageCdnScripts = [
     integrity: "sha384-toVdrLSMaw7Y55MowcKqkmFL/Ek6Sky62NOk0b5sDDZBu2wcoPyyQUt9unDVjXhL",
   },
   {
-    src: "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.3/dist/index.global.js",
-    integrity: "sha384-2ql948lIdLcGEE0/qxNiudyTjgauA3RDJERu5xW75kFCvSl5a9odyQYCb6tEjnmB",
+    src: "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4.3.5/dist/index.global.js",
+    integrity: "sha384-t+qLIxS5zM/KF99/doWY+dxTsavdvgayaZt8A9ntLsUjEkiXzYl5M3Ij8zVFPL9j",
   },
 ];

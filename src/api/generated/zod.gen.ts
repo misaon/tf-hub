@@ -33,7 +33,7 @@ export const zUpdateSettingsDto = z.object({
     slackAbsenceChannel: z.string(),
     slackErrorChannel: z.string(),
     slackSchedulerChannel: z.string(),
-    maxWorklogHours: z.number(),
+    maxWorklogHours: z.number().gte(0),
     merchEmailReceiver: z.string(),
     merchProducts: z.string()
 });
@@ -158,15 +158,20 @@ export const zCollaboratorLabelDto = z.object({
 });
 
 export const zUpdateCollaboratorDto = z.object({
-    primaryOfficeAbsenceApproverId: z.number(),
+    primaryOfficeAbsenceApproverId: z.number().optional(),
     notifyResponsiblePersonAboutBirthday: z.boolean().optional(),
-    isPublic: z.boolean(),
-    positionOverride: z.string(),
-    labels: z.array(z.string())
+    isPublic: z.boolean().optional(),
+    positionOverride: z.string().optional(),
+    labels: z.array(z.string()).optional()
 });
 
+/**
+ * New preferred language
+ */
+export const zCommunicationLanguage = z.enum(['en', 'cs']);
+
 export const zUpdateCollaboratorSettingsDto = z.object({
-    language: z.string()
+    language: zCommunicationLanguage
 });
 
 export const zUpdateCollaboratorBioDto = z.object({
@@ -219,20 +224,18 @@ export const zCollaboratorGoalDto = z.object({
 
 export const zCreateCollaboratorGoalDto = z.object({
     message: z.string(),
-    collaboratorUuid: z.string(),
-    editorUuid: z.string(),
     startDate: z.string(),
-    deadline: z.string()
+    deadline: z.string(),
+    collaboratorUuid: z.uuid()
 });
 
 export const zUpdateCollaboratorGoalDto = z.object({
     message: z.string(),
-    collaboratorUuid: z.string(),
-    editorUuid: z.string(),
     startDate: z.string(),
     deadline: z.string(),
-    done: z.boolean(),
-    active: z.boolean()
+    collaboratorUuid: z.uuid().optional(),
+    done: z.boolean().optional(),
+    active: z.boolean().optional()
 });
 
 export const zNameUuidIdDto = z.object({
@@ -289,7 +292,7 @@ export const zCreateCollaborator1On1Dto = z.object({
     message: z.string(),
     collaboratorRating: z.string().nullish(),
     companyRating: zCollaborator1On1Rating,
-    isFinancialMessage: z.boolean(),
+    isFinancialMessage: z.boolean().optional(),
     collaboratorUuid: z.uuid(),
     date: z.string()
 });
@@ -298,7 +301,7 @@ export const zUpdateCollaborator1On1Dto = z.object({
     message: z.string(),
     collaboratorRating: z.string().nullish(),
     companyRating: zCollaborator1On1Rating,
-    isFinancialMessage: z.boolean()
+    isFinancialMessage: z.boolean().optional()
 });
 
 export const zCollaboratorNoteDto = z.object({
@@ -427,7 +430,7 @@ export const zProjectReportDto = z.object({
 export const zUpdateProjectReportNoteDto = z.object({
     id: z.number(),
     text: z.string(),
-    deadline: z.string()
+    deadline: z.string().optional()
 });
 
 export const zUpdateProjectReportDto = z.object({
@@ -466,7 +469,7 @@ export const zSonarCloudMetricsDto = z.object({
 export const zFetchSonarCloudMetricsResponseDto = z.record(z.string(), z.unknown());
 
 export const zFetchSonarCloudMetricsDto = z.object({
-    projectUuid: z.string().nullish()
+    projectUuid: z.uuid().nullish()
 });
 
 export const zCreateSitdownsDto = z.object({
@@ -514,29 +517,29 @@ export const zUpdateSitdownNotesDto = z.object({
 
 export const zCreateSitdownsTimesDto = z.object({
     name: z.string(),
-    time: z.string(),
-    weekDay: z.number()
+    time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    weekDay: z.number().gte(0).lte(6)
 });
 
 export const zUpdateSitdownsTimesDto = z.object({
     name: z.string(),
-    time: z.string(),
-    weekDay: z.number()
+    time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
+    weekDay: z.number().gte(0).lte(6)
 });
 
 export const zCreateSitdownsRatingsDto = z.object({
     sitdownId: z.number(),
     projectId: z.number(),
-    value: z.number().nullable(),
-    ratingGoalsValue: z.string().nullable(),
-    ratingFeelingValue: z.string().nullable(),
-    ratingRefactor: z.boolean().nullable(),
-    ratingTests: z.boolean().nullable(),
-    ratingDocumentation: z.boolean().nullable(),
-    ratingSecurityAudit: z.boolean().nullable(),
-    ratingLicenseAudit: z.boolean().nullable(),
-    ratingProjectChecklist: z.boolean().nullable(),
-    coverage: z.number().nullable()
+    value: z.number().nullish(),
+    ratingGoalsValue: z.string().nullish(),
+    ratingFeelingValue: z.string().nullish(),
+    ratingRefactor: z.boolean().nullish(),
+    ratingTests: z.boolean().nullish(),
+    ratingDocumentation: z.boolean().nullish(),
+    ratingSecurityAudit: z.boolean().nullish(),
+    ratingLicenseAudit: z.boolean().nullish(),
+    ratingProjectChecklist: z.boolean().nullish(),
+    coverage: z.number().gte(0).lte(100).nullish()
 });
 
 /**
@@ -570,8 +573,8 @@ export const zCreateDocumentDto = z.object({
 });
 
 export const zUpdateDocumentDto = z.object({
-    content: z.string(),
-    title: z.string(),
+    content: z.string().optional(),
+    title: z.string().optional(),
     documentState: zDocumentState
 });
 
@@ -760,11 +763,11 @@ export const zOfficeAbsencesBasicStatisticsDto = z.object({
 export const zCreateOfficeAbsencesDto = z.object({
     dateFrom: z.string(),
     dateTo: z.string(),
-    hours: z.number(),
-    approverDescription: z.string(),
-    generalDescription: z.string(),
-    collaboratorUuid: z.string(),
-    approverUuid: z.string(),
+    hours: z.number().gte(0),
+    approverDescription: z.string().optional(),
+    generalDescription: z.string().optional(),
+    collaboratorUuid: z.uuid().optional(),
+    approverUuid: z.uuid(),
     type: zOfficeAbsenceType,
     weeklyLimitException: z.boolean().optional()
 });
@@ -772,10 +775,17 @@ export const zCreateOfficeAbsencesDto = z.object({
 export const zCreateUpdatedMessagesDto = z.object({
     dateFrom: z.string().optional(),
     dateTo: z.string().optional(),
-    collaboratorUuid: z.string().optional()
+    collaboratorUuid: z.uuid().optional()
 });
 
 export const zUpdateOfficeAbsencesDto = z.object({
+    state: zOfficeAbsenceState,
+    approverDescription: z.string().optional(),
+    generalDescription: z.string().optional(),
+    token: z.string().optional()
+});
+
+export const zUpdateOfficeAbsenceByTokenDto = z.object({
     state: zOfficeAbsenceState,
     approverDescription: z.string().optional(),
     generalDescription: z.string().optional(),
@@ -887,7 +897,7 @@ export const zUpdateWorkingTimeRecordItemDto = z.object({
 
 export const zUpdateStatusWorkingTimeRecordItemDto = z.object({
     state: zWorkingTimeRecordState,
-    note: z.string()
+    note: z.string().optional()
 });
 
 export const zWorklogsDto = z.object({
@@ -931,7 +941,7 @@ export const zCreateWorklogsDto = z.object({
     started: z.string(),
     costCategoryId: z.number(),
     projectUuid: z.uuid().nullable(),
-    collaboratorId: z.number()
+    collaboratorId: z.number().optional()
 });
 
 export const zUpdateWorklogsDto = z.object({

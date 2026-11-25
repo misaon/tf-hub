@@ -1,4 +1,3 @@
-import { consola } from "consola";
 import { colors } from "consola/utils";
 import { z } from "zod";
 
@@ -9,14 +8,14 @@ import {
   zValidateVisionResponseDto,
 } from "../../api/generated/zod.gen.ts";
 import { v3 } from "../../api/paths.ts";
-import { formatValue, printDetails } from "../../cli/output.ts";
-import { defineAction, defineDomain, type DomainAction, type RegistryEntry } from "../domain.ts";
+import { formatValue, printDetails, stripControlCharacters, writeOutput } from "../../cli/output.ts";
+import { defineAction, defineDomain, readOnlyAnnotations, type DomainAction, type RegistryEntry } from "../domain.ts";
 import { oneOnOneRatings } from "../one-on-ones/api.ts";
 
 type AiValidation = z.infer<typeof zValidateGoalResponseDto>;
 
 async function validate(
-  schema: { parse(input: unknown): AiValidation },
+  schema: z.ZodType<AiValidation>,
   path: string,
   body: Record<string, unknown>,
 ): Promise<AiValidation> {
@@ -31,11 +30,15 @@ function renderValidation(validation: AiValidation): void {
   });
 
   for (const issue of validation.issues ?? []) {
-    consola.log(`${colors.yellow(issue.severity ?? "issue")} ${issue.title ?? ""}: ${issue.message ?? ""}`);
+    writeOutput(
+      stripControlCharacters(
+        `${colors.yellow(issue.severity ?? "issue")} ${issue.title ?? ""}: ${issue.message ?? ""}`,
+      ),
+    );
   }
 
   for (const suggestion of validation.suggestions ?? []) {
-    consola.log(colors.dim(`→ ${suggestion}`));
+    writeOutput(colors.dim(`→ ${stripControlCharacters(suggestion)}`));
   }
 }
 
@@ -56,7 +59,7 @@ const validateActions: DomainAction[] = [
       vision: visionField,
     }),
     // POST, but only computes a verdict — no Hub state changes.
-    annotations: { readOnlyHint: true, destructiveHint: false },
+    annotations: readOnlyAnnotations,
     run: (input) => validate(zValidateGoalResponseDto, "validate-goal", input),
     render: renderValidation,
   }),
@@ -68,7 +71,7 @@ const validateActions: DomainAction[] = [
     input: z.object({
       visionDraft: z.string().min(1).max(20_000).describe("The vision text to validate."),
     }),
-    annotations: { readOnlyHint: true, destructiveHint: false },
+    annotations: readOnlyAnnotations,
     run: (input) => validate(zValidateVisionResponseDto, "validate-vision", input),
     render: renderValidation,
   }),
@@ -84,7 +87,7 @@ const validateActions: DomainAction[] = [
       companyRating: z.enum(oneOnOneRatings).describe("Company/manager rating of the period.").optional(),
       isFinancialMessage: z.boolean().default(false).describe("Whether the notes contain financial (salary) topics."),
     }),
-    annotations: { readOnlyHint: true, destructiveHint: false },
+    annotations: readOnlyAnnotations,
     run: (input) => validate(zValidate1On1ResponseDto, "validate-1on1", input),
     render: renderValidation,
   }),

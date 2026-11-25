@@ -66,7 +66,9 @@ export function normalize(spec: OpenApiSpec): void {
       }
     }
 
-    for (const [key, property] of Object.entries(schema.properties ?? {})) {
+    const properties = schema.properties ?? {};
+
+    for (const [key, property] of Object.entries(properties)) {
       if (property.format === "date" || property.format === "date-time") {
         delete property.format;
       }
@@ -93,7 +95,7 @@ export function normalize(spec: OpenApiSpec): void {
         if (property.$ref === undefined) {
           property.nullable = true;
         } else {
-          schema.properties![key] = { allOf: [{ $ref: property.$ref }], nullable: true };
+          properties[key] = { allOf: [{ $ref: property.$ref }], nullable: true };
         }
       }
     }

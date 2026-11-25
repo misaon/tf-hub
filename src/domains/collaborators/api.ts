@@ -3,17 +3,21 @@ import { z } from "zod";
 import { callApi } from "../../api/client.ts";
 import { zCollaboratorLabelDto, zCollaboratorsDto } from "../../api/generated/zod.gen.ts";
 import { v3 } from "../../api/paths.ts";
-import { flagParameter, type Paging } from "../shared.ts";
+import { formatValue } from "../../cli/output.ts";
+import { flagParameter, omitKey, richTextSchema, type Paging } from "../shared.ts";
 
 const collaboratorsPath = v3("collaborators");
 
-export type Collaborator = z.infer<typeof zCollaboratorsDto>;
+const collaboratorSchema = zCollaboratorsDto.extend({ bioText: richTextSchema });
 
-const collaboratorListSchema = z.array(zCollaboratorsDto);
+export type Collaborator = z.infer<typeof collaboratorSchema>;
+export type CollaboratorSummary = Omit<Collaborator, "bioText">;
+
+const collaboratorListSchema = z.array(collaboratorSchema);
 const collaboratorLabelListSchema = z.array(zCollaboratorLabelDto);
 
 export async function getCurrentCollaborator(): Promise<Collaborator> {
-  return zCollaboratorsDto.parse(await callApi(`${collaboratorsPath}/me`));
+  return collaboratorSchema.parse(await callApi(`${collaboratorsPath}/me`));
 }
 
 export async function getCurrentCollaboratorUuid(): Promise<string> {
@@ -43,24 +47,21 @@ export async function resolveCollaboratorScope(options: {
   return await getCurrentCollaboratorUuid();
 }
 
-export function omitBio(collaborator: Collaborator): Omit<Collaborator, "bioText"> {
-  const { bioText, ...rest } = collaborator;
-  void bioText;
-
-  return rest;
-}
-
-type Position = NonNullable<Collaborator["positions"]>[number];
-
-function omitPermissions(position: Position): Omit<Position, "permissions"> {
-  const { permissions, ...rest } = position;
-  void permissions;
-
-  return rest;
+export function omitBio(collaborator: Collaborator): CollaboratorSummary {
+  return omitKey(collaborator, "bioText");
 }
 
 export function omitPositionPermissions(collaborator: Collaborator): Collaborator {
-  return { ...collaborator, positions: collaborator.positions?.map((position) => omitPermissions(position)) };
+  return { ...collaborator, positions: collaborator.positions?.map((position) => omitKey(position, "permissions")) };
+}
+
+export function positionOf(collaborator: CollaboratorSummary): string {
+  return collaborator.positionOverride || formatValue(collaborator.positions?.[0]?.name);
+}
+
+// Write tools echo the record; the bio and per-position permissions would only cost the caller tokens.
+export function leanCollaborator(collaborator: Collaborator): CollaboratorSummary {
+  return omitBio(omitPositionPermissions(collaborator));
 }
 
 export async function listPublicCollaborators({ limit, offset }: Paging): Promise<Collaborator[]> {
@@ -68,7 +69,7 @@ export async function listPublicCollaborators({ limit, offset }: Paging): Promis
 }
 
 export async function getPublicCollaborator({ uuid }: { uuid: string }): Promise<Collaborator> {
-  return zCollaboratorsDto.parse(await callApi(`${collaboratorsPath}/${uuid}/public`));
+  return collaboratorSchema.parse(await callApi(`${collaboratorsPath}/${uuid}/public`));
 }
 
 export async function listCollaborators(
@@ -101,25 +102,25 @@ export async function updateCollaborator(options: {
 }): Promise<Collaborator> {
   const { uuid, ...body } = options;
 
-  return zCollaboratorsDto.parse(await callApi(`${collaboratorsPath}/${uuid}`, { method: "PUT", body }));
+  return collaboratorSchema.parse(await callApi(`${collaboratorsPath}/${uuid}`, { method: "PUT", body }));
 }
 
 export async function updateCollaboratorBio(options: { uuid: string; bioText: string }): Promise<Collaborator> {
   const { uuid, ...body } = options;
 
-  return zCollaboratorsDto.parse(await callApi(`${collaboratorsPath}/${uuid}/bio`, { method: "PUT", body }));
+  return collaboratorSchema.parse(await callApi(`${collaboratorsPath}/${uuid}/bio`, { method: "PUT", body }));
 }
 
 export async function updateCollaboratorLanguage(options: { uuid: string; language: string }): Promise<Collaborator> {
   const { uuid, ...body } = options;
 
-  return zCollaboratorsDto.parse(
+  return collaboratorSchema.parse(
     await callApi(`${collaboratorsPath}/${uuid}/collaboratorSettings`, { method: "PUT", body }),
   );
 }
 
 export async function confirmSecurityPolicy(options: { uuid: string }): Promise<Collaborator> {
-  return zCollaboratorsDto.parse(
+  return collaboratorSchema.parse(
     await callApi(`${collaboratorsPath}/${options.uuid}/confirmSecurityTF`, { method: "PUT" }),
   );
 }

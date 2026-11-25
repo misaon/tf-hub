@@ -13,7 +13,16 @@ import {
 } from "../../cli/output.ts";
 import { getCurrentCollaborator, resolveCollaboratorScope } from "../collaborators/api.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
-import { commaSeparatedStringsField, dateField, idField, limitField, offsetField, uuidField } from "../fields.ts";
+import {
+  commaSeparatedStringsField,
+  dateField,
+  idField,
+  limitField,
+  mineField,
+  numberField,
+  offsetField,
+  uuidField,
+} from "../fields.ts";
 import {
   createOfficeAbsence,
   getBackupAbsenceApprover,
@@ -58,13 +67,13 @@ export const absencesDomain: RegistryEntry = defineDomain({
       action: "list",
       description:
         "List office absences with their approval state. Covers vacations, home office, business trips and " +
-        "sick leave. dateFrom and dateTo select absences overlapping that range, so dateFrom=dateTo=<day> " +
+        "sick leave. dateFrom and dateTo select absences overlapping that range, so passing the same day as both " +
         "lists who is out that day; without them the whole history is returned. Approvers also see requests " +
         "of others — pass mine=true for only your own records.",
       input: z.object({
         limit: limitField,
         offset: offsetField,
-        mine: z.boolean().default(false).describe("Only absences of the signed-in user."),
+        mine: mineField("Only absences of the signed-in user."),
         type: z.enum(officeAbsenceTypes).describe(absenceTypeDescription).optional(),
         states: commaSeparatedStringsField(
           "Comma-separated absence states to include: WAITING_FOR_APPROVAL, APPROVED, REJECTED, " +
@@ -92,6 +101,7 @@ export const absencesDomain: RegistryEntry = defineDomain({
     }),
     defineAction({
       action: "create",
+      annotations: { openWorldHint: true },
       description:
         "Request a new office absence. Covers vacation, home office, business trips and sick leave. The request goes to " +
         "the approver for approval; the general description is shared in the team calendar and Slack.",
@@ -99,13 +109,19 @@ export const absencesDomain: RegistryEntry = defineDomain({
         type: z.enum(officeAbsenceTypes).describe(absenceTypeDescription),
         dateFrom: dateField("First day of the absence (YYYY-MM-DD)."),
         dateTo: dateField("Last day of the absence (YYYY-MM-DD)."),
-        hours: z.coerce.number().min(0).describe("Total absence hours (e.g. 8 per full working day)."),
+        hours: numberField(z.number().min(0)).describe("Total absence hours (e.g. 8 per full working day)."),
         generalDescription: z
           .string()
           .min(1)
           .describe("Public description shown in the calendar and Slack, e.g. 'Vacation in the mountains'."),
-        approverDescription: z.string().default("").describe("Private note visible only to the approver."),
-        collaboratorUuid: uuidField("UUID of the absent collaborator. Defaults to the signed-in user.").optional(),
+        approverDescription: z
+          .string()
+          .min(1)
+          .describe(
+            "Private note visible only to the approver. Required for a late request and for a weekly home office " +
+              "limit exception.",
+          )
+          .optional(),
         approverUuid: uuidField(
           "UUID of the approver. Defaults to the signed-in user's primary absence approver.",
         ).optional(),
@@ -117,29 +133,19 @@ export const absencesDomain: RegistryEntry = defineDomain({
               "the limit and requires an approverDescription explaining why.",
           ),
       }),
-      async run({ collaboratorUuid, approverUuid, ...rest }) {
-        let resolvedCollaboratorUuid = collaboratorUuid;
-        let resolvedApproverUuid = approverUuid;
-
-        if (resolvedCollaboratorUuid === undefined || resolvedApproverUuid === undefined) {
-          const me = await getCurrentCollaborator();
-          resolvedCollaboratorUuid ??= me.uuid ?? undefined;
-          resolvedApproverUuid ??= me.primaryOfficeAbsenceApprover?.uuid ?? undefined;
+      async run({ approverUuid, ...rest }) {
+        if (approverUuid !== undefined) {
+          return createOfficeAbsence({ ...rest, approverUuid });
         }
 
-        if (resolvedCollaboratorUuid === undefined) {
-          throw new Error("Could not resolve the collaborator UUID. Pass collaboratorUuid explicitly.");
-        }
+        const me = await getCurrentCollaborator();
+        const defaultApproverUuid = me.primaryOfficeAbsenceApprover?.uuid;
 
-        if (resolvedApproverUuid === undefined) {
+        if (!defaultApproverUuid) {
           throw new Error("No approver found. Pass approverUuid explicitly.");
         }
 
-        return createOfficeAbsence({
-          ...rest,
-          collaboratorUuid: resolvedCollaboratorUuid,
-          approverUuid: resolvedApproverUuid,
-        });
+        return createOfficeAbsence({ ...rest, approverUuid: defaultApproverUuid });
       },
       render: absenceDetails,
     }),
@@ -166,7 +172,7 @@ export const absencesDomain: RegistryEntry = defineDomain({
         "allowance. Counts APPROVED and DONE absences for the whole year, so future approved absences are " +
         "included.",
       input: z.object({
-        year: z.coerce.number().int().min(2000).max(2200).describe("Calendar year, e.g. 2026."),
+        year: numberField(z.number().int().min(2000).max(2200)).describe("Calendar year, e.g. 2026."),
       }),
       positionals: ["year"],
       run: ({ year }) => getOfficeAbsenceStatistics({ fullYear: year }),

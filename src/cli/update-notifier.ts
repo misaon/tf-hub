@@ -1,14 +1,13 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import { consola } from "consola";
-import { colors } from "consola/utils";
+import { box, colors } from "consola/utils";
 import { ofetch } from "ofetch";
 import { z } from "zod";
 
 import { repositoryUrl } from "../config.ts";
+import { cacheDirectory } from "../user-directories.ts";
 
-const checkIntervalMs = 5 * 60 * 1000;
+const checkIntervalMs = 24 * 60 * 60 * 1000;
 const networkTimeoutMs = 1500;
 
 const cacheSchema = z.object({ checkedAt: z.number(), latestVersion: z.string() });
@@ -18,9 +17,7 @@ type UpdateCache = z.infer<typeof cacheSchema>;
 const registryManifestSchema = z.object({ version: z.string() });
 
 function cacheFilePath(packageName: string): string {
-  const baseDirectory = process.env["XDG_CACHE_HOME"] ?? join(homedir(), ".cache");
-
-  return join(baseDirectory, "tf-hub", `${packageName.replace("/", "__")}.json`);
+  return join(cacheDirectory(), `${packageName.replace("/", "__")}.json`);
 }
 
 async function readCache(filePath: string): Promise<UpdateCache | null> {
@@ -96,29 +93,34 @@ export function binaryDownloadUrl(version: string): string {
   return `${repositoryUrl}/releases/download/v${version}/${binaryAssetName()}`;
 }
 
-export function updateInstallCommand(packageName: string, binPath = process.argv[1] ?? ""): string {
+type InstallCommand = readonly [executable: string, ...commandArguments: string[]];
+
+export function updateInstallCommand(packageName: string, binPath = process.argv[1] ?? ""): InstallCommand {
   if (binPath.includes(".bun")) {
-    return `bun add -g ${packageName}`;
+    return ["bun", "add", "-g", packageName];
   }
 
   if (binPath.includes("pnpm")) {
-    return `pnpm add -g ${packageName}`;
+    return ["pnpm", "add", "-g", packageName];
   }
 
   if (binPath.includes("yarn")) {
-    return `yarn global add ${packageName}`;
+    return ["yarn", "global", "add", packageName];
   }
 
-  return `npm install -g ${packageName}`;
+  return ["npm", "install", "-g", packageName];
 }
 
 function notificationsDisabled(): boolean {
-  return Boolean(process.env["NO_UPDATE_NOTIFIER"] || process.env["CI"]) || !process.stdout.isTTY;
+  return (
+    Boolean(process.env["NO_UPDATE_NOTIFIER"] || process.env["CI"]) || !process.stdout.isTTY || !process.stderr.isTTY
+  );
 }
 
-export async function notifyOnUpdate(packageName: string, currentVersion: string): Promise<void> {
+// Returns the rendered notice instead of printing it, so it lands on stderr after the command's own output.
+export async function findUpdateNotice(packageName: string, currentVersion: string): Promise<string | null> {
   if (notificationsDisabled()) {
-    return;
+    return null;
   }
 
   const filePath = cacheFilePath(packageName);
@@ -135,13 +137,15 @@ export async function notifyOnUpdate(packageName: string, currentVersion: string
     }
   }
 
-  const notice = selectUpdateNotice(currentVersion, latestVersion);
+  const newerVersion = selectUpdateNotice(currentVersion, latestVersion);
 
-  if (notice) {
-    const instruction = runsAsStandaloneBinary()
-      ? `Run ${colors.cyan("tf-hub update")} to see the download link.`
-      : `Run ${colors.cyan(updateInstallCommand(packageName))} to update.`;
-
-    consola.box(`Update available ${colors.dim(currentVersion)} → ${colors.green(notice)}\n${instruction}`);
+  if (!newerVersion) {
+    return null;
   }
+
+  const instruction = runsAsStandaloneBinary()
+    ? `Run ${colors.cyan("tf-hub update")} to see the download link.`
+    : `Run ${colors.cyan(updateInstallCommand(packageName).join(" "))} to update.`;
+
+  return box(`Update available ${colors.dim(currentVersion)} → ${colors.green(newerVersion)}\n${instruction}`);
 }

@@ -4,8 +4,8 @@ import { callApi } from "../../api/client.ts";
 import { zMerchRequestResultDto, zSettingsDto } from "../../api/generated/zod.gen.ts";
 import { v3 } from "../../api/paths.ts";
 import { detailsRenderer, formatName, formatValue, printSuccess } from "../../cli/output.ts";
-import { defineAction, defineDomain, standaloneEntry, type RegistryEntry } from "../domain.ts";
-import { idField } from "../fields.ts";
+import { additiveAnnotations, defineAction, defineDomain, standaloneEntry, type RegistryEntry } from "../domain.ts";
+import { idField, numberField } from "../fields.ts";
 import { defineOperation } from "../operation.ts";
 
 const settingsPath = v3("settings");
@@ -64,7 +64,7 @@ export const settingsDomain: RegistryEntry = defineDomain({
         slackAbsenceChannel: z.string().describe("Slack channel for absence notifications."),
         slackErrorChannel: z.string().describe("Slack channel for error reporting."),
         slackSchedulerChannel: z.string().describe("Slack channel for scheduler notifications."),
-        maxWorklogHours: z.coerce.number().min(1).describe("Maximum hours that can be logged per day."),
+        maxWorklogHours: numberField(z.number().min(1)).describe("Maximum hours that can be logged per day."),
         merchEmailReceiver: z.string().describe("Email address that receives merch requests."),
         merchProducts: z.string().describe("Available merch products (comma-separated list as configured in the Hub)."),
       }),
@@ -93,5 +93,5 @@ export const merchRequestEntry: RegistryEntry = standaloneEntry(
       printSuccess(`Merch request sent (${result.status ?? "OK"}).`);
     },
   },
-  { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: false },
+  { ...additiveAnnotations, openWorldHint: true },
 );

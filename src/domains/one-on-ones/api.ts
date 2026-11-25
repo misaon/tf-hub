@@ -1,17 +1,19 @@
 import { z } from "zod";
 
 import { callApi } from "../../api/client.ts";
-import { zCollaborator1On1Dto } from "../../api/generated/zod.gen.ts";
+import { zCollaborator1On1Dto, zCollaborator1On1Rating } from "../../api/generated/zod.gen.ts";
 import { v3 } from "../../api/paths.ts";
-import type { Paging } from "../shared.ts";
+import { richTextSchema, type Paging } from "../shared.ts";
 
 const oneOnOnesPath = v3("collaborator-1on1s");
 
-export const oneOnOneRatings = ["BAD", "OK", "GREAT"] as const;
+export const oneOnOneRatings = zCollaborator1On1Rating.options;
 
-export type OneOnOne = z.infer<typeof zCollaborator1On1Dto>;
+const oneOnOneSchema = zCollaborator1On1Dto.extend({ message: richTextSchema });
 
-const oneOnOneListSchema = z.array(zCollaborator1On1Dto);
+export type OneOnOne = z.infer<typeof oneOnOneSchema>;
+
+const oneOnOneListSchema = z.array(oneOnOneSchema);
 
 export async function listOneOnOnes(
   options: Paging & {
@@ -39,7 +41,7 @@ export async function createOneOnOne(options: {
   collaboratorRating?: string | undefined;
   isFinancialMessage: boolean;
 }): Promise<OneOnOne> {
-  return zCollaborator1On1Dto.parse(await callApi(oneOnOnesPath, { method: "POST", body: options }));
+  return oneOnOneSchema.parse(await callApi(oneOnOnesPath, { method: "POST", body: options }));
 }
 
 export async function updateOneOnOne(options: {
@@ -51,7 +53,7 @@ export async function updateOneOnOne(options: {
 }): Promise<OneOnOne> {
   const { uuid, ...body } = options;
 
-  return zCollaborator1On1Dto.parse(await callApi(`${oneOnOnesPath}/${uuid}`, { method: "PUT", body }));
+  return oneOnOneSchema.parse(await callApi(`${oneOnOnesPath}/${uuid}`, { method: "PUT", body }));
 }
 
 export async function deleteOneOnOne(options: { uuid: string }): Promise<void> {

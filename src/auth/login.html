@@ -4,6 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>tf-hub login</title>
+    <script type="importmap">
+      __IMPORT_MAP__
+    </script>
     <!-- UMD builds on purpose: single-file bundles are the only way to pin them with SRI hashes. -->
     __CDN_SCRIPTS__
     <style type="text/tailwindcss">
@@ -60,7 +63,7 @@
       const reportToCli = (payload) =>
         fetch("/callback", {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: { "content-type": "application/json", [__LOGIN_NONCE_HEADER__]: __LOGIN_NONCE__ },
           body: JSON.stringify(payload),
         });
 

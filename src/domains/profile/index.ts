@@ -3,9 +3,8 @@ import { z } from "zod";
 import { decodeJwtClaims } from "../../auth/jwt.ts";
 import { getValidIdToken } from "../../auth/tokens.ts";
 import { detailsRenderer, formatName, formatValue, missingValue } from "../../cli/output.ts";
-import { getCurrentCollaborator, omitBio } from "../collaborators/api.ts";
-import { positionOf } from "../collaborators/index.ts";
-import { standaloneEntry, type RegistryEntry } from "../domain.ts";
+import { getCurrentCollaborator, omitBio, positionOf } from "../collaborators/api.ts";
+import { readOnlyAnnotations, standaloneEntry, type RegistryEntry } from "../domain.ts";
 import { defineOperation } from "../operation.ts";
 
 export const whoamiEntry: RegistryEntry = standaloneEntry(
@@ -34,6 +33,7 @@ export const whoamiEntry: RegistryEntry = standaloneEntry(
       ["Expires", (session) => (session.expiresAt ? new Date(session.expiresAt).toLocaleString() : missingValue)],
     ]),
   },
+  readOnlyAnnotations,
 );
 
 export const meEntry: RegistryEntry = standaloneEntry(
@@ -57,4 +57,5 @@ export const meEntry: RegistryEntry = standaloneEntry(
       ["UUID", (me) => formatValue(me.uuid)],
     ]),
   },
+  readOnlyAnnotations,
 );

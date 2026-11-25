@@ -5,7 +5,7 @@ import { zCollaboratorFeedbackDto } from "../../api/generated/zod.gen.ts";
 import { v3 } from "../../api/paths.ts";
 import { formatDate, formatName, formatValue, tableRenderer } from "../../cli/output.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
-import { allTimeFromDate, allTimeToDate, dateField, uuidField } from "../fields.ts";
+import { allTimeFromDate, allTimeToDate, dateField, mineField, uuidField } from "../fields.ts";
 
 const feedbacksPath = v3("collaborator-feedbacks");
 
@@ -51,7 +51,7 @@ export const feedbacksDomain: RegistryEntry = defineDomain({
         "List periodic colleague feedback ratings. The BAD/GOOD/GREAT ratings per period feed the feedback " +
         "heatmap. Visibility depends on permissions (own, team or all); mine=true lists only your own.",
       input: z.object({
-        mine: z.boolean().default(false).describe("Only feedback received by the signed-in user."),
+        mine: mineField("Only feedback received by the signed-in user."),
         collaboratorUuid: uuidField("Only feedback received by the collaborator with this UUID.").optional(),
         fromDate: fromDateField,
         toDate: toDateField,

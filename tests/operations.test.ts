@@ -50,7 +50,7 @@ describe("documents-list operation", () => {
 });
 
 describe("worklogs-create operation", () => {
-  it("fills in the signed-in collaborator id and a null projectUuid", async () => {
+  it("leaves the collaborator to the server and sends a null projectUuid", async () => {
     await seedValidSession();
 
     let requestBody: unknown = null;
@@ -59,11 +59,7 @@ describe("worklogs-create operation", () => {
       timeSpent: 60,
       started: "2026-06-10",
     };
-    mockFetch((input, init) => {
-      if (String(input).includes("/collaborators/me")) {
-        return Promise.resolve(jsonResponse({ message: "OK", data: me }));
-      }
-
+    const fetchSpy = mockFetch((_input, init) => {
       requestBody = JSON.parse(String(init?.body));
 
       return Promise.resolve(jsonResponse({ message: "OK", data: worklog }));
@@ -85,8 +81,8 @@ describe("worklogs-create operation", () => {
       started: "2026-06-10",
       costCategoryId: 3,
       projectUuid: null,
-      collaboratorId: 7,
     });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 });
 

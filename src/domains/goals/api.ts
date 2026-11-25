@@ -3,15 +3,18 @@ import { z } from "zod";
 import { callApi } from "../../api/client.ts";
 import { zCollaboratorGoalDto, zCollaboratorVisionDto } from "../../api/generated/zod.gen.ts";
 import { v3 } from "../../api/paths.ts";
-import type { Paging } from "../shared.ts";
+import { richTextSchema, type Paging } from "../shared.ts";
 
 const goalsPath = v3("collaborator-goals");
 const visionPath = v3("collaborator-vision");
 
-export type Goal = z.infer<typeof zCollaboratorGoalDto>;
-export type Vision = z.infer<typeof zCollaboratorVisionDto>;
+const goalSchema = zCollaboratorGoalDto.extend({ message: richTextSchema });
+const visionSchema = zCollaboratorVisionDto.extend({ message: richTextSchema });
 
-const goalListSchema = z.array(zCollaboratorGoalDto);
+export type Goal = z.infer<typeof goalSchema>;
+export type Vision = z.infer<typeof visionSchema>;
+
+const goalListSchema = z.array(goalSchema);
 
 export async function listGoals(
   options: Paging & { collaboratorUuid?: string | undefined; fromDate: string; toDate: string },
@@ -24,27 +27,25 @@ export async function listGoals(
 
 export async function createGoal(options: {
   collaboratorUuid: string;
-  editorUuid: string;
   message: string;
   startDate: string;
   deadline: string;
 }): Promise<Goal> {
-  return zCollaboratorGoalDto.parse(await callApi(goalsPath, { method: "POST", body: options }));
+  return goalSchema.parse(await callApi(goalsPath, { method: "POST", body: options }));
 }
 
 export async function updateGoal(options: {
   id: number;
-  collaboratorUuid: string;
-  editorUuid: string;
+  collaboratorUuid?: string | undefined;
   message: string;
   startDate: string;
   deadline: string;
-  done: boolean;
-  active: boolean;
+  done?: boolean | undefined;
+  active?: boolean | undefined;
 }): Promise<Goal> {
   const { id, ...body } = options;
 
-  return zCollaboratorGoalDto.parse(await callApi(`${goalsPath}/${id}`, { method: "PUT", body }));
+  return goalSchema.parse(await callApi(`${goalsPath}/${id}`, { method: "PUT", body }));
 }
 
 export async function deleteGoal(options: { id: number }): Promise<void> {
@@ -52,15 +53,15 @@ export async function deleteGoal(options: { id: number }): Promise<void> {
 }
 
 export async function getVision(options: { collaboratorUuid: string }): Promise<Vision> {
-  return zCollaboratorVisionDto.parse(await callApi(`${visionPath}/collaborator/${options.collaboratorUuid}`));
+  return visionSchema.parse(await callApi(`${visionPath}/collaborator/${options.collaboratorUuid}`));
 }
 
 export async function createVision(options: { collaboratorUuid: string; message: string }): Promise<Vision> {
-  return zCollaboratorVisionDto.parse(await callApi(visionPath, { method: "POST", body: options }));
+  return visionSchema.parse(await callApi(visionPath, { method: "POST", body: options }));
 }
 
 export async function updateVision(options: { id: number; message: string }): Promise<Vision> {
   const { id, ...body } = options;
 
-  return zCollaboratorVisionDto.parse(await callApi(`${visionPath}/${id}`, { method: "PUT", body }));
+  return visionSchema.parse(await callApi(`${visionPath}/${id}`, { method: "PUT", body }));
 }

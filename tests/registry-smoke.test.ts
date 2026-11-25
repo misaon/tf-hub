@@ -1,8 +1,9 @@
 import { describe, expect, it, spyOn } from "bun:test";
-import { runCommand, type ArgDef, type ArgsDef, type CommandDef } from "citty";
+import { runCommand, type ArgsDef, type CommandDef } from "citty";
 import { consola } from "consola";
 import { z } from "zod";
 
+import { kebabCase } from "../src/cli/usage.ts";
 import { operations, registryCommands } from "../src/domains/index.ts";
 import type { Operation } from "../src/domains/operation.ts";
 import { jsonResponse, makeJwt, mockFetch, seedValidSession } from "./support.ts";
@@ -59,7 +60,8 @@ function argumentsFor(operation: Operation, argDefinitions: ArgsDef): string[] {
   const positionals: string[] = [];
   const flags: string[] = [];
 
-  for (const [key, definition] of Object.entries(argDefinitions) as [string, ArgDef][]) {
+  for (const [argName, definition] of Object.entries(argDefinitions)) {
+    const key = Object.keys(operation.input.shape).find((candidate) => kebabCase(candidate) === argName) ?? argName;
     const field = key === "json" || definition.type === "boolean" ? undefined : operation.input.shape[key];
     const unwrapped = field ? unwrap(field) : undefined;
 
@@ -69,7 +71,7 @@ function argumentsFor(operation: Operation, argDefinitions: ArgsDef): string[] {
       if (definition.type === "positional") {
         positionals.push(value);
       } else {
-        flags.push(`--${key}=${value}`);
+        flags.push(`--${argName}=${value}`);
       }
     }
   }
@@ -115,7 +117,8 @@ describe("every registered operation", () => {
     spyOn(consola, "log").mockReturnValue(undefined);
     spyOn(consola, "info").mockReturnValue(undefined);
     spyOn(consola, "success").mockReturnValue(undefined);
-    spyOn(consola, "box").mockReturnValue(undefined);
+    spyOn(consola, "warn").mockReturnValue(undefined);
+    spyOn(process.stdout, "write").mockImplementation(() => true);
 
     const errorSpy = spyOn(consola, "error").mockReturnValue(undefined);
 

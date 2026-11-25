@@ -2,7 +2,7 @@ import { describe, expect, it, spyOn } from "bun:test";
 
 import { readStoredCredentials } from "../src/auth/store.ts";
 import { getValidIdToken, refreshIdToken } from "../src/auth/tokens.ts";
-import { jsonResponse, seedValidSession } from "./support.ts";
+import { jsonResponse, mockFetch, seedValidSession } from "./support.ts";
 
 const oneHourMs = 3_600_000;
 
@@ -20,7 +20,7 @@ describe("refreshIdToken", () => {
       expiresAtMs: expect.any(Number),
     });
 
-    const [requestUrl, requestInit] = fetchSpy.mock.calls[0]!;
+    const [requestUrl, requestInit] = fetchSpy.mock.calls[0] ?? [];
 
     expect(String(requestUrl)).toContain("securetoken.googleapis.com");
     expect(String(requestUrl)).toContain("key=API_KEY");
@@ -70,6 +70,20 @@ describe("getValidIdToken", () => {
     const stored = await readStoredCredentials();
     expect(stored?.idToken).toBe("FRESH");
     expect(stored?.refreshToken).toBe("NEW");
+  });
+
+  it("shares one refresh between concurrent callers so the refresh token rotates once", async () => {
+    await seedValidSession({ refreshToken: "OLD", idToken: "OLD_ID", idTokenExpiresAtMs: Date.now() - 1000 });
+    const fetchSpy = mockFetch(() =>
+      Promise.resolve(jsonResponse({ id_token: "FRESH", refresh_token: "NEW", expires_in: "3600" })),
+    );
+
+    expect(await Promise.all([getValidIdToken(), getValidIdToken(), getValidIdToken()])).toEqual([
+      "FRESH",
+      "FRESH",
+      "FRESH",
+    ]);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
   it("throws when there is no stored session", async () => {

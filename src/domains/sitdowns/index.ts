@@ -4,7 +4,6 @@ import {
   deletedRenderer,
   detailsRenderer,
   ellipsize,
-  plainText,
   formatDate,
   formatName,
   formatValue,
@@ -14,35 +13,37 @@ import {
   type ColumnSpec,
 } from "../../cli/output.ts";
 import { defineAction, defineDomain, type RegistryEntry } from "../domain.ts";
-import { dateField, explicitBooleanField, idField, limitField, monthField, offsetField, uuidField } from "../fields.ts";
+import {
+  dateField,
+  explicitBooleanField,
+  idField,
+  limitField,
+  monthField,
+  numberField,
+  offsetField,
+  uuidField,
+} from "../fields.ts";
 import { sortDirections } from "../shared.ts";
 import {
   createSitdown,
   createSitdownNote,
   createSitdownRating,
-  createSitdownTime,
   deleteSitdown,
   deleteSitdownNote,
-  deleteSitdownTime,
   listSitdownNotes,
   listSitdownRatings,
-  listSitdownTimes,
   listSitdowns,
   sitdownRatingValues,
   updateSitdown,
   updateSitdownNote,
-  updateSitdownTime,
   type Sitdown,
   type SitdownNote,
   type SitdownRating,
-  type SitdownTime,
 } from "./api.ts";
-
-const weekDayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 const monthFilterInput = z.object({
   month: monthField(),
-  monthsBack: z.coerce.number().int().min(0).describe("Also include this many previous months.").optional(),
+  monthsBack: numberField(z.number().int().min(0)).describe("Also include this many previous months.").optional(),
   limit: limitField,
   offset: offsetField,
 });
@@ -56,18 +57,8 @@ const noteDetails = detailsRenderer<SitdownNote>([
   ["ID", (note) => formatValue(note.id)],
   ["Project", (note) => formatName(note.project)],
   ["Deadline", (note) => formatDate(note.deadline)],
-  ["Text", (note) => ellipsize(plainText(note.text), 100)],
+  ["Text", (note) => ellipsize(note.text, 100)],
 ]);
-
-const timeColumns: ColumnSpec<SitdownTime>[] = [
-  ["ID", (time) => formatValue(time.id)],
-  ["Name", (time) => formatValue(time.name)],
-  [
-    "Day",
-    (time) => (typeof time.weekDay === "number" ? (weekDayNames[time.weekDay] ?? String(time.weekDay)) : missingValue),
-  ],
-  ["Time", (time) => formatValue(time.time)],
-];
 
 const ratingColumns: ColumnSpec<SitdownRating>[] = [
   ["ID", (rating) => formatValue(rating.id)],
@@ -77,13 +68,6 @@ const ratingColumns: ColumnSpec<SitdownRating>[] = [
   ["Feeling", (rating) => formatValue(rating.ratingFeelingValue)],
   ["Coverage", (rating) => (typeof rating.coverage === "number" ? `${rating.coverage}%` : missingValue)],
 ];
-
-const weekDayField = z.coerce
-  .number()
-  .int()
-  .min(0)
-  .max(6)
-  .describe("Day of the week (0 = Sunday, 1 = Monday, … 6 = Saturday).");
 
 const checkDescription = (subject: string): string => `Whether ${subject} (true/false).`;
 
@@ -152,11 +136,7 @@ export const sitdownNotesDomain: RegistryEntry = defineDomain({
         orderBy: z.string().describe("Property to order by, e.g. deadline or createdAt.").optional(),
         orderDir: z.enum(sortDirections).describe("Order direction: ASC or DESC.").optional(),
       }),
-      async run(input) {
-        const notes = await listSitdownNotes(input);
-
-        return notes.map((note) => Object.assign(note, { text: plainText(note.text) }));
-      },
+      run: (input) => listSitdownNotes(input),
       render: tableRenderer<SitdownNote>([
         ["ID", (note) => formatValue(note.id)],
         ["Project", (note) => formatName(note.project)],
@@ -206,58 +186,6 @@ export const sitdownNotesDomain: RegistryEntry = defineDomain({
   ],
 });
 
-export const sitdownTimesDomain: RegistryEntry = defineDomain({
-  name: "sitdown-times",
-  description: "Recurring sitdown time slots for projects.",
-  actions: [
-    defineAction({
-      action: "list",
-      description:
-        "List recurring sitdown time slots (name, weekday, time). Projects are assigned to a slot and discussed " +
-        "in that meeting.",
-      input: z.object({ limit: limitField, offset: offsetField }),
-      run: (input) => listSitdownTimes(input),
-      render: tableRenderer(timeColumns),
-    }),
-    defineAction({
-      action: "create",
-      description: "Create a recurring sitdown time slot. Projects can then be assigned to it.",
-      input: z.object({
-        name: z.string().min(1).describe("Name of the slot, e.g. 'Monday 10:00'."),
-        time: z.string().min(1).describe("Time of day (HH:mm), e.g. 10:00."),
-        weekDay: weekDayField,
-      }),
-      run: (input) => createSitdownTime(input),
-      render: detailsRenderer(timeColumns),
-    }),
-    defineAction({
-      action: "update",
-      description: "Update a recurring sitdown time slot.",
-      input: z.object({
-        id: idField("Numeric ID of the sitdown time slot."),
-        name: z.string().min(1).describe("Updated name."),
-        time: z.string().min(1).describe("Updated time of day (HH:mm)."),
-        weekDay: weekDayField,
-      }),
-      positionals: ["id"],
-      run: (input) => updateSitdownTime(input),
-      render: detailsRenderer(timeColumns),
-    }),
-    defineAction({
-      action: "delete",
-      description: "Delete a recurring sitdown time slot. It must not be used by any project.",
-      input: z.object({ id: idField("Numeric ID of the sitdown time slot.") }),
-      positionals: ["id"],
-      async run(input) {
-        await deleteSitdownTime(input);
-
-        return { deleted: input.id };
-      },
-      render: deletedRenderer("Sitdown time"),
-    }),
-  ],
-});
-
 export const sitdownRatingsDomain: RegistryEntry = defineDomain({
   name: "sitdown-ratings",
   description: "Project health ratings recorded at sitdowns.",
@@ -282,7 +210,7 @@ export const sitdownRatingsDomain: RegistryEntry = defineDomain({
         projectId: idField("Numeric ID of the project (see `projects-list`)."),
         ratingGoalsValue: z.enum(sitdownRatingValues).describe("How well the project goals were met.").optional(),
         ratingFeelingValue: z.enum(sitdownRatingValues).describe("Team feeling about the project state.").optional(),
-        coverage: z.coerce.number().min(0).max(100).describe("Test coverage in percent (0-100).").optional(),
+        coverage: numberField(z.number().min(0).max(100)).describe("Test coverage in percent (0-100).").optional(),
         ratingRefactor: explicitBooleanField(checkDescription("refactoring was done")).optional(),
         ratingTests: explicitBooleanField(checkDescription("tests were written")).optional(),
         ratingDocumentation: explicitBooleanField(checkDescription("documentation was updated")).optional(),

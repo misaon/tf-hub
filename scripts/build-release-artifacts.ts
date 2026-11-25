@@ -3,37 +3,30 @@
 import { consola } from "consola";
 
 import rootPackage from "../package.json" with { type: "json" };
+import { binaryAssetName } from "../src/cli/update-notifier.ts";
+
+const releaseDirectory = "artifacts/release";
 
 interface PlatformTarget {
   compileTarget: string;
   assetName: string;
 }
 
-const targets: PlatformTarget[] = [
-  {
-    compileTarget: "bun-linux-x64",
-    assetName: "tf-hub-linux-x64",
-  },
-  {
-    compileTarget: "bun-linux-arm64",
-    assetName: "tf-hub-linux-arm64",
-  },
-  {
-    compileTarget: "bun-darwin-x64",
-    assetName: "tf-hub-darwin-x64",
-  },
-  {
-    compileTarget: "bun-darwin-arm64",
-    assetName: "tf-hub-darwin-arm64",
-  },
-  {
-    compileTarget: "bun-windows-x64",
-    assetName: "tf-hub-windows-x64.exe",
-  },
+const platforms: readonly [platform: NodeJS.Platform, architecture: NodeJS.Architecture][] = [
+  ["linux", "x64"],
+  ["linux", "arm64"],
+  ["darwin", "x64"],
+  ["darwin", "arm64"],
+  ["win32", "x64"],
 ];
 
+const targets: PlatformTarget[] = platforms.map(([platform, architecture]) => ({
+  compileTarget: `bun-${platform === "win32" ? "windows" : platform}-${architecture}`,
+  assetName: binaryAssetName(platform, architecture),
+}));
+
 async function compile(target: PlatformTarget): Promise<string> {
-  const outfile = `artifacts/release/${target.assetName}`;
+  const outfile = `${releaseDirectory}/${target.assetName}`;
   const build = Bun.spawn(
     [
       "bun",
@@ -57,14 +50,14 @@ async function compile(target: PlatformTarget): Promise<string> {
 async function writeChecksums(assetNames: string[]): Promise<void> {
   const lines = await Promise.all(
     assetNames.map(async (assetName) => {
-      const bytes = await Bun.file(`artifacts/release/${assetName}`).arrayBuffer();
+      const bytes = await Bun.file(`${releaseDirectory}/${assetName}`).arrayBuffer();
       const digest = new Bun.CryptoHasher("sha256").update(bytes).digest("hex");
 
       return `${digest}  ${assetName}`;
     }),
   );
 
-  await Bun.write("artifacts/release/SHA256SUMS", `${lines.join("\n")}\n`);
+  await Bun.write(`${releaseDirectory}/SHA256SUMS`, `${lines.join("\n")}\n`);
 }
 
 await Promise.all(

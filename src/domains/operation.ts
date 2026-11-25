@@ -1,4 +1,4 @@
-import type { z } from "zod";
+import { z } from "zod";
 
 import { ApiRequestError } from "../api/client.ts";
 import { collectTruncatedPages, describeTruncatedPage } from "../api/paging.ts";
@@ -36,9 +36,19 @@ function withOwnRecordsHint(error: unknown, shape: z.ZodRawShape, input: object)
     return error;
   }
 
-  return new ApiRequestError(
-    `${error.message} If you meant your own records, retry with mine=true (--mine on the CLI).`,
-    403,
+  return new ApiRequestError(`${error.message} If you meant your own records, retry with mine=true.`, 403, {
+    cause: error,
+  });
+}
+
+// A response that fails its schema is a server change, not a caller mistake; say so instead of dumping issues.
+function withReadableResponseErrors(error: unknown): unknown {
+  if (!(error instanceof z.ZodError)) {
+    return error;
+  }
+
+  return new Error(
+    `TF Hub returned data in an unexpected shape, so retrying will not help:\n${z.prettifyError(error)}`,
     { cause: error },
   );
 }
@@ -53,6 +63,6 @@ export async function runOperation<Shape extends z.ZodRawShape, TOutput>(
 
     return { data, notices: truncatedPages.map((page) => describeTruncatedPage(page, acceptsOffset)) };
   } catch (error) {
-    throw withOwnRecordsHint(error, operation.input.shape, input);
+    throw withReadableResponseErrors(withOwnRecordsHint(error, operation.input.shape, input));
   }
 }
